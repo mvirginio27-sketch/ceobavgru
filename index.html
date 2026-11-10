@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CEO da Unidade BAVGRU</title>
+
+    <!-- Configurações de Aplicativo Mobile & Tablet (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#004d26">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CEO BAVGRU">
+    <link rel="apple-touch-icon" href="Vibra-640x640.jpeg">
+    <link rel="icon" type="image/jpeg" href="Vibra-640x640.jpeg">
+
+    <!-- Tailwind CSS para Estilização Ágil -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para o Gráfico Analítico -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons para Ícones Tecnológicos -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js para Exportação Mensal em PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Configuração de Cores Oficiais da Vibra Energia */
+        :root {
+            --vibra-green-deep: #004d26;
+            --vibra-green-medium: #005c2d;
+            --vibra-green-light: #008f45;
+            --vibra-green-soft: #f0fdf4;
+            --vibra-accent: #ffb800; /* Dourado da Base */
+        }
+
+        body {
+            background-color: var(--vibra-green-deep);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Wrapper do Mapa com Proporção Travada para Evitar Desconfiguração em TV 75" */
+        .map-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--vibra-green-light);
+            background-color: #0b1511;
+        }
+
+        .map-wrapper img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Container de Pins Absoluto */
+        #pins-mapa-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .map-pin {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 40;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+        }
+
+        /* Balões de Radar das Fotos que Piscam como Sinalização de Pista */
+        .beacon-signal {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        /* Beacon Azul - Pendente */
+        .animate-beacon-blue {
+            border: 3px solid #3b82f6;
+            animation: pulse-blue 1.8s infinite ease-in-out;
+            box-shadow: 0 0 12px #3b82f6;
+        }
+
+        /* Beacon Verde - Conforme */
+        .animate-beacon-green {
+            border: 3px solid #10b981;
+            animation: pulse-green 1.8s infinite ease-in-out;
+            box-shadow: 0 0 12px #10b981;
+        }
+
+        /* Beacon Amarelo - Atenção */
+        .animate-beacon-yellow {
+            border: 3px solid #f59e0b;
+            animation: pulse-yellow 2.5s infinite ease-in-out, float-smooth 3s infinite ease-in-out;
+            box-shadow: 0 0 15px #f59e0b;
+        }
+
+        /* Beacon Vermelho - Crítico */
+        .animate-beacon-red {
+            border: 3px solid #ef4444;
+            animation: pulse-red 0.8s infinite linear, vibrate-critical 0.15s infinite linear;
+            box-shadow: 0 0 25px #ef4444;
+        }
+
+        /* Beacon Dourado - HQ Base BAVGRU */
+        .animate-beacon-gold {
+            border: 3px solid var(--vibra-accent);
+            animation: pulse-gold 2s infinite ease-in-out;
+            box-shadow: 0 0 18px var(--vibra-accent);
+        }
+
+        /* Beacon de Obra Crítica Ativa */
+        .badge-obra-critica {
+            position: absolute;
+            top: -14px;
+            right: -14px;
+            background: repeating-linear-gradient(
+                -45deg,
+                #f59e0b,
+                #f59e0b 6px,
+                #000000 6px,
+                #000000 12px
+            );
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 8px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            border: 1px solid #fcd34d;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
+            z-index: 35;
+            animation: pulse-obra 1s infinite alternate ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes pulse-obra {
+            0% { transform: scale(0.95); box-shadow: 0 0 6px #f59e0b; }
+            100% { transform: scale(1.08); box-shadow: 0 0 16px #ef4444; }
+        }
+
+        /* Keyframes de Sinalização de Radar */
+        @keyframes pulse-blue {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        @keyframes pulse-yellow {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.6; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        @keyframes pulse-gold {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Flutuação Suave para Alerta de Atenção */
+        @keyframes float-smooth {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* Vibração Crítica do Status de Ação Necessária */
+        @keyframes vibrate-critical {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-1.5px, 1px); }
+            40% { transform: translate(1.5px, -1px); }
+            60% { transform: translate(-1px, -1.5px); }
+            80% { transform: translate(1px, 1.5px); }
+        }
+
+        /* Tooltip Flutuante de Pista com Z-index absoluto para Sobressair Totalmente */
+        .tooltip-pista {
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background-color: rgba(15, 23, 42, 0.96);
+            border: 1px solid var(--vibra-green-light);
+            color: #ffffff;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease-in-out;
+            z-index: 200 !important;
+        }
+
+        .tooltip-pista::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.96) transparent transparent transparent;
+        }
+
+        .map-pin:hover .tooltip-pista,
+        .map-pin:active .tooltip-pista {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .map-pin:hover {
+            z-index: 150 !important;
+        }
+
+        /* Estilização da Barra de Rolagem */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 77, 38, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--vibra-green-light);
+            border-radius: 3px;
+        }
+
+        /* --- ANIMAÇÕES DOS AVIÕES REALISTAS NAS PISTAS --- */
+        .aero-runway {
+            position: absolute;
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .aero-runway svg {
+            width: 100%;
+            height: 100%;
+            fill: rgba(255, 255, 255, 0.85);
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+        }
+
+        /* Avião 1: Decolagem na Pista Principal Inferior */
+        .plane-takeoff {
+            animation: takeoff-path 16s infinite linear;
+        }
+
+        @keyframes takeoff-path {
+            0% {
+                top: 89%;
+                left: 36%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 0;
+            }
+            5% {
+                top: 89%;
+                left: 38%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 1;
+            }
+            30% {
+                top: 88.5%;
+                left: 68%;
+                transform: rotate(86deg) scale(0.65);
+                opacity: 1;
+            }
+            40% {
+                top: 86%;
+                left: 82%;
+                transform: rotate(80deg) scale(0.8);
+                opacity: 0.9;
+            }
+            50% {
+                top: 82%;
+                left: 96%;
+                transform: rotate(78deg) scale(0.95);
+                opacity: 0;
+            }
+            100% {
+                top: 89%;
+                left: 36%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 0;
+            }
+        }
+
+        /* Avião 2: Pouso na Pista Paralela */
+        .plane-landing {
+            animation: landing-path 20s infinite linear;
+            animation-delay: 5s;
+        }
+
+        @keyframes landing-path {
+            0% {
+                top: 79%;
+                left: 10%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 0;
+            }
+            10% {
+                top: 79%;
+                left: 20%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 1;
+            }
+            70% {
+                top: 78.5%;
+                left: 65%;
+                transform: rotate(86deg) scale(0.55);
+                opacity: 1;
+            }
+            85% {
+                top: 75%;
+                left: 75%;
+                transform: rotate(45deg) scale(0.5);
+                opacity: 0.8;
+            }
+            95% {
+                top: 70%;
+                left: 78%;
+                transform: rotate(30deg) scale(0.45);
+                opacity: 0;
+            }
+            100% {
+                top: 79%;
+                left: 10%;
+                transform: rotate(86deg) scale(0.6);
+                opacity: 0;
+            }
+        }
+
+        /* Avião 3: Táxi Lento no Pátio Técnico */
+        .plane-taxi {
+            animation: taxi-path 28s infinite linear;
+            animation-delay: 10s;
+        }
+
+        @keyframes taxi-path {
+            0% {
+                top: 68%;
+                left: 45%;
+                transform: rotate(98deg) scale(0.5);
+                opacity: 0;
+            }
+            5% {
+                top: 68%;
+                left: 47%;
+                transform: rotate(98deg) scale(0.5);
+                opacity: 1;
+            }
+            40% {
+                top: 70%;
+                left: 65%;
+                transform: rotate(98deg) scale(0.5);
+                opacity: 1;
+            }
+            50% {
+                top: 67%;
+                left: 68%;
+                transform: rotate(30deg) scale(0.5);
+                opacity: 1;
+            }
+            60% {
+                top: 63%;
+                left: 69%;
+                transform: rotate(0deg) scale(0.5);
+                opacity: 1;
+            }
+            70% {
+                top: 62%;
+                left: 69%;
+                transform: rotate(0deg) scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                top: 68%;
+                left: 45%;
+                transform: rotate(98deg) scale(0.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-4 md:p-6 lg:p-8 min-h-screen">
+
+<!-- Container Principal do Dashboard -->
+<div class="max-w-[1400px] mx-auto space-y-4">
+
+    <!-- CABEÇALHO DO PROGRAMA -->
+    <header class="flex flex-col md:flex-row justify-between items-center bg-emerald-950/70 backdrop-blur border border-emerald-800 p-4 rounded-xl gap-4">
+        <div class="flex items-center gap-4 w-full md:w-auto">
+            <!-- Logotipo Vibra Oficial no Header -->
+            <img src="Vibra-640x640.jpeg" alt="Vibra Energia" class="h-10 w-10 rounded object-cover border border-emerald-600 bg-white">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                    CEO DA UNIDADE BAVGRU
+                </h1>
+                <p class="text-xs text-emerald-400 font-medium tracking-wide">
+                    PROGRAMA: CEO DA UNIDADE OPERACIONAL BAVGRU
+                </p>
+            </div>
+        </div>
+
+        <!-- Navegador de Semanas & Ações Globais -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-start md:justify-end">
+            <div class="flex items-center bg-emerald-900/80 rounded-lg p-1 border border-emerald-700">
+                <button onclick="mudarSemana(-1)" class="p-2 hover:bg-emerald-800 rounded text-emerald-300 transition-colors">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <div class="px-3 sm:px-4 text-center cursor-pointer" onclick="abrirCalendarioCompleto()">
+                    <span id="label-semana" class="block text-sm font-bold text-white">Semana 34</span>
+                    <span id="label-periodo" class="block text-[10px] text-emerald-400">17/08 a 23/08</span>
+                </div>
+                <button onclick="mudarSemana(1)" class="p-2 hover:bg-emerald-800 rounded text-emerald-300 transition-colors">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Input Invisível de Calendário Nativo -->
+            <input type="date" id="calendario-real" class="absolute pointer-events-none opacity-0 w-0 h-0" onchange="selecionarDataCalendario(this.value)">
+
+            <!-- Botões de Ações Globais -->
+            <button onclick="salvarInformacoesGlobais()" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm shadow-lg transition-all">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                Salvar
+            </button>
+            <button onclick="alternarAba('mapa')" class="aba-btn flex items-center gap-1.5 sm:gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm transition-all" id="btn-aba-mapa">
+                <i data-lucide="map" class="w-4 h-4"></i>
+                Mapa
+            </button>
+            <button onclick="alternarAba('analise')" class="aba-btn flex items-center gap-1.5 sm:gap-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm transition-all" id="btn-aba-analise">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                Relatório
+            </button>
+            <button onclick="alternarAba('admin')" class="aba-btn flex items-center gap-1.5 sm:gap-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm transition-all" id="btn-aba-admin">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                Escala
+            </button>
+        </div>
+    </header>
+
+    <!-- SEÇÃO: MAPA E DIRETRIZES CORPORATIVAS (LADO A LADO) -->
+    <main id="container-mapa-central" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- Coluna 1: Mapa de Satélite e Sinalizadores de Pista (Esquerda) -->
+        <section class="lg:col-span-8 flex flex-col">
+            <div class="map-wrapper relative">
+                <!-- Mapa de Satélite real da base aérea BAVGRU -->
+                <img src="Mapa-estacionamento-full-v3.jpg" alt="Mapa Operacional BAVGRU" class="w-full">
+
+                <!-- ANIMAÇÕES DE AVIÕES REALISTAS NAS PISTAS DO AEROPORTO -->
+                <div class="aero-runway plane-takeoff">
+                    <svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg>
+                </div>
+                <div class="aero-runway plane-landing">
+                    <svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg>
+                </div>
+                <div class="aero-runway plane-taxi">
+                    <svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/></svg>
+                </div>
+
+                <!-- Container Absoluto de Pins Interativos -->
+                <div id="pins-mapa-container"></div>
+            </div>
+
+            <!-- Legenda do Mapa Central -->
+            <div class="bg-emerald-950/60 border border-emerald-800 p-3 rounded-lg flex flex-col gap-2 mt-2">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex flex-wrap gap-3 sm:gap-4 text-xs font-semibold">
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50"></span> 🔵 Pendente</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span> 🟢 Conforme</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50"></span> 🟡 Atenção</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></span> 🔴 Ação</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-lg shadow-amber-400/50"></span> 🔸 HQ BAVGRU</span>
+                        <span class="flex items-center gap-1.5 bg-black/60 px-2 py-0.5 rounded border border-amber-500 text-amber-300 font-extrabold text-[11px]"><i data-lucide="hard-hat" class="w-3.5 h-3.5 text-amber-400"></i> 🚧 Obra</span>
+                    </div>
+                    <!-- Lista de PTs Ativas no Rodapé -->
+                    <div id="container-pts-rodape" class="text-xs font-medium text-amber-400 flex items-center gap-2">
+                        <i data-lucide="file-warning" class="w-4 h-4 animate-pulse"></i>
+                        <span>Nenhuma Permissão de Trabalho (PT) cadastrada para esta semana.</span>
+                    </div>
+                </div>
+
+                <!-- PAINEL DE OBRAS CRÍTICAS EM ANDAMENTO NO RODAPÉ -->
+                <div id="container-obras-rodape" class="border-t border-emerald-800/80 pt-2 text-xs flex flex-wrap items-center gap-2">
+                    <!-- Gerado dinamicamente via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Coluna 2: Rotina Visível e Cultura de Dono (Direita) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+            <div class="bg-gradient-to-br from-emerald-950 to-emerald-900 border-2 border-emerald-700 p-5 rounded-xl shadow-2xl flex-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 pb-3 border-b border-emerald-800 mb-4">
+                        <i data-lucide="bookmark" class="w-6 h-6 text-emerald-400"></i>
+                        <h2 class="text-lg font-bold text-white tracking-wide">ROTINA VISÍVEL & CULTURA DE DONO</h2>
+                    </div>
+
+                    <!-- Lista de Missões e Valores da BAVGRU -->
+                    <div class="space-y-3 sm:space-y-4 text-slate-100">
+                        <div class="bg-emerald-950/70 p-3 rounded-lg border-l-4 border-emerald-400">
+                            <h3 class="text-xs font-black text-emerald-400 tracking-wider uppercase mb-1">Visão</h3>
+                            <p class="text-xs font-bold leading-relaxed">Transformar a BAVGRU em referência de <span class="text-emerald-300 font-extrabold">excelência, segurança e confiabilidade</span> na aviação.</p>
+                        </div>
+
+                        <div class="bg-emerald-950/70 p-3 rounded-lg border-l-4 border-emerald-400">
+                            <h3 class="text-xs font-black text-emerald-400 tracking-wider uppercase mb-1">Missão</h3>
+                            <p class="text-xs font-bold leading-relaxed">Assumir responsabilidade integral por <span class="text-emerald-300 font-extrabold">pessoas, ativos, custos, clientes</span> e performance operacional.</p>
+                        </div>
+
+                        <div class="bg-emerald-950/70 p-3 rounded-lg border-l-4 border-emerald-400">
+                            <h3 class="text-xs font-black text-emerald-400 tracking-wider uppercase mb-1">Foco</h3>
+                            <p class="text-xs font-bold leading-relaxed">Operação <span class="text-emerald-300 font-extrabold">segura, pontual e eficiente</span>, sustentada por dados, presença em campo e disciplina 24/7.</p>
+                        </div>
+
+                        <div class="bg-emerald-950/70 p-3 rounded-lg border-l-4 border-emerald-400">
+                            <h3 class="text-xs font-black text-emerald-400 tracking-wider uppercase mb-1">Entrega</h3>
+                            <p class="text-xs font-bold leading-relaxed">Garantir abastecimentos no prazo, com <span class="text-emerald-300 font-extrabold">frota disponível</span>, equipe preparada e padrão impecável.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-950/80 p-3.5 rounded-lg border border-emerald-800 mt-4">
+                    <h3 class="text-xs font-black text-emerald-400 tracking-wider uppercase mb-1">Objetivo Final</h3>
+                    <p class="text-xs font-bold leading-relaxed text-emerald-100">
+                        Ser um exemplo de <span class="text-emerald-300 font-extrabold">CEO da unidade</span>, com rotina visível, gestão antecipatória e cultura de dono praticada pela liderança e pela operação da base BAVGRU.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SEÇÃO: STATUS DOS LÍDERES E GUARDIOES (RODAPÉ ANALÍTICO) -->
+    <section id="aba-responsaveis-secao" class="bg-emerald-950/60 border border-emerald-800 p-4 rounded-xl shadow-xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-2 border-b border-emerald-800">
+            <div>
+                <h2 class="text-lg font-bold text-white tracking-wide">Status dos Líderes e Guardiões</h2>
+                <p class="text-xs text-emerald-400">Clique em qualquer cartão de pista para preencher o checklist de auditoria correspondente</p>
+            </div>
+            <!-- Indicador de Validação Operacional -->
+            <div id="selo-validacao-pista" class="bg-emerald-900/80 border border-emerald-600 px-3 py-1.5 rounded-lg text-[10px] font-bold text-emerald-300 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                ESCALA ATIVA CONFORME
+            </div>
+        </div>
+
+        <!-- Grade de Cartões Dinâmicos Ordenados por Hierarquia (9 por linha na TV 75") -->
+        <div id="grid-responsaveis-cards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2"></div>
+    </section>
+
+    <!-- SEÇÃO ABA: RELATÓRIO ANALÍTICO -->
+    <section id="aba-relatorio-analitico" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Gráficos de Auditoria e Conformidade -->
+        <div class="lg:col-span-8 bg-emerald-950/80 border border-emerald-800 p-6 rounded-xl space-y-6">
+            <div class="flex flex-wrap justify-between items-center pb-3 border-b border-emerald-800 gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Gráfico Analítico de Conformidade</h2>
+                    <p class="text-xs text-emerald-400">Visão percentual do status de pista da base aérea de Guarulhos</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportarRelatorioMensalPDF()" class="bg-red-700 hover:bg-red-600 text-white font-bold text-xs px-3 py-2 rounded flex items-center gap-1.5 transition-colors shadow">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        Exportar Relatório Mensal (PDF)
+                    </button>
+                    <button onclick="exportarRelatorioGeral()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2 rounded flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Exportar Histórico (CSV)
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <!-- Canvas do Gráfico -->
+                <div class="relative flex justify-center items-center h-[260px]">
+                    <canvas id="graficoDoughnutConformidade"></canvas>
+                </div>
+                <!-- Métricas Detalhadas -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-white mb-2">Resumo Executivo da Semana</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-emerald-900/40 p-3 rounded-lg border border-emerald-800 text-center">
+                            <span class="block text-xs text-slate-400">Áreas Auditadas</span>
+                            <span id="kpi-total" class="text-xl font-bold text-white">0 / 9</span>
+                        </div>
+                        <div class="bg-emerald-900/40 p-3 rounded-lg border border-emerald-800 text-center">
+                            <span class="block text-xs text-emerald-400">Conformes</span>
+                            <span id="kpi-conforme" class="text-xl font-bold text-emerald-400">0</span>
+                        </div>
+                        <div class="bg-emerald-900/40 p-3 rounded-lg border border-emerald-800 text-center">
+                            <span class="block text-xs text-amber-400">Em Atenção</span>
+                            <span id="kpi-atencao" class="text-xl font-bold text-amber-400">0</span>
+                        </div>
+                        <div class="bg-emerald-900/40 p-3 rounded-lg border border-emerald-800 text-center">
+                            <span class="block text-xs text-red-400">Com Desvios</span>
+                            <span id="kpi-critico" class="text-xl font-bold text-red-400">0</span>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-900/30 p-3 rounded-lg border border-emerald-800/60">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="text-xs font-bold text-emerald-300">Obras Críticas em Andamento</h4>
+                            <span id="kpi-obras" class="text-xs font-extrabold px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500 text-amber-300">0 ativas</span>
+                        </div>
+                        <p class="text-xs text-slate-300">Intervenções de obras exigem monitoramento contínuo de isolamento de pista, recolhimento de FOD e cumprimento das APRs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ranking de Desvios Detectados -->
+        <div class="lg:col-span-4 bg-emerald-950/80 border border-emerald-800 p-6 rounded-xl flex flex-col justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white pb-2 border-b border-emerald-800 mb-3">Ranking de Não Conformidades</h2>
+                <p class="text-xs text-slate-400 mb-4">Itens apontados expressamente como Não Conformes (🔴 NC)</p>
+                <div id="lista-ranking-desvios" class="space-y-3">
+                    <!-- Gerado dinamicamente -->
+                </div>
+            </div>
+            <div class="bg-emerald-900/30 border border-emerald-800/80 p-3 rounded-lg text-xs mt-4">
+                <span class="block font-bold text-amber-400 mb-1">💡 Regra de Lançamento:</span>
+                <p class="text-slate-300">Apenas os itens marcados expressamente com Não Conforme (NC) geram desvios e entram no plano de tratamento corretivo.</p>
+            </div>
+        </div>
+
+        <!-- NOVO PAINEL EXECUTIVO: GESTÃO E TRATAMENTO DE NÃO CONFORMIDADES (PLANO DE AÇÃO) -->
+        <div class="lg:col-span-12 bg-emerald-950/90 border-2 border-amber-500/70 p-6 rounded-xl mt-2 shadow-2xl">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-emerald-800 mb-4 gap-2">
+                <div>
+                    <h2 class="text-base font-black text-amber-400 tracking-wide flex items-center gap-2">
+                        <i data-lucide="wrench" class="text-amber-400 w-5 h-5"></i>
+                        PLANO DE AÇÃO: TRATAMENTO DAS NÃO CONFORMIDADES
+                    </h2>
+                    <p class="text-xs text-slate-300">Preencha o que foi feito para tratar e ajustar cada desvio apontado nas inspeções de campo da base.</p>
+                </div>
+                <div class="text-[10px] font-bold text-slate-400 bg-black/50 px-3 py-1 rounded border border-emerald-700">
+                    Sincronização imediata no Relatório Mensal
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead>
+                        <tr class="border-b border-emerald-800 text-amber-300 uppercase text-[10px] bg-emerald-900/40">
+                            <th class="py-2.5 px-3">Setor / Área</th>
+                            <th class="py-2.5 px-3">Item Não Conforme</th>
+                            <th class="py-2.5 px-3">Evidência / Desvio Observado</th>
+                            <th class="py-2.5 px-3 text-white">Ação Corretiva Realizada (O que foi feito?)</th>
+                            <th class="py-2.5 px-3 text-white">Responsável pela Ação</th>
+                            <th class="py-2.5 px-3 text-white">Status Tratamento</th>
+                            <th class="py-2.5 px-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-tratamento-nao-conformidades">
+                        <!-- Injetado dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAINEL: REGISTRO DE COMENTÁRIOS E EVIDÊNCIAS DA SEMANA -->
+        <div class="lg:col-span-12 bg-emerald-950/80 border border-emerald-800 p-6 rounded-xl mt-2">
+            <h2 class="text-base font-bold text-white pb-2 border-b border-emerald-800 mb-3 flex items-center gap-2">
+                <i data-lucide="message-square" class="text-emerald-400 w-5 h-5"></i>
+                Registro de Comentários e Evidências da Semana
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead>
+                        <tr class="border-b border-emerald-800 text-emerald-400 uppercase text-[10px]">
+                            <th class="py-2.5">Setor</th>
+                            <th class="py-2.5">Responsável</th>
+                            <th class="py-2.5">Status</th>
+                            <th class="py-2.5">Obra Crítica</th>
+                            <th class="py-2.5">Comentário / Desvio Registrado pelo Supervisor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-comentarios-analitico">
+                        <!-- Injetado dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEÇÃO ABA: ADMINISTRAÇÃO DA ESCALA E OBRAS -->
+    <section id="aba-administracao-escala" class="hidden bg-emerald-950/80 border border-emerald-800 p-6 rounded-xl">
+        <div class="flex justify-between items-center pb-3 border-b border-emerald-800 mb-6">
+            <div>
+                <h2 class="text-lg font-bold text-white">Painel de Administração da Escala, PTs & Obras</h2>
+                <p class="text-xs text-emerald-400 flex items-center gap-1">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    Configurando Escala, PTs e Obras para a <span id="admin-semana-ativa" class="font-extrabold text-white">Semana 34</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Formulário de Coberturas de Férias -->
+            <div class="lg:col-span-3 bg-emerald-900/30 border border-emerald-800 p-4 rounded-xl space-y-4">
+                <h3 class="text-sm font-bold text-emerald-400 border-b border-emerald-800 pb-2">Controle de Férias da Semana</h3>
+                <p class="text-xs text-slate-400">Marque as caixas para tirar o colaborador da escala ativa desta semana. O sistema aplicará as coberturas automáticas.</p>
+                <div id="lista-ferias-admin" class="space-y-2 max-h-[360px] overflow-y-auto pr-2">
+                    <!-- Checkboxes injetados via JS -->
+                </div>
+            </div>
+
+            <!-- Atribuição Direta de Postos, Códigos de PT & Gestão de Obras -->
+            <div class="lg:col-span-9 bg-emerald-900/30 border border-emerald-800 p-4 rounded-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-emerald-800 pb-2">
+                    <h3 class="text-sm font-bold text-emerald-400">Escala, PT e Gestão de Obras Críticas por Setor</h3>
+                    <span class="text-[10px] text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/60 flex items-center gap-1">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-400"></i> Obras tratadas com criticidade máxima SSMA
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead>
+                            <tr class="border-b border-emerald-800 text-emerald-400 uppercase text-[10px]">
+                                <th class="py-2">Setor</th>
+                                <th class="py-2">Responsável Selecionado</th>
+                                <th class="py-2">PT Emitida</th>
+                                <th class="py-2 text-amber-400">Tem Obra?</th>
+                                <th class="py-2 text-amber-400">Tipo de Obra / Escopo</th>
+                                <th class="py-2 text-amber-400">Empresa Contratada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-atribuicoes-admin">
+                            <!-- Linhas injetadas via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end pt-2 border-t border-emerald-800">
+                    <button onclick="salvarConfiguracaoAdmin()" class="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-5 py-2 rounded text-xs transition-colors shadow-lg">
+                        Salvar e Aplicar Escala Semanal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- MODAL POPUP: AUDITORIA, CHECKLIST & GESTÃO DE OBRAS CRÍTICAS -->
+<div id="modal-auditoria" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur p-4">
+    <div class="bg-emerald-950 border-2 border-emerald-700 max-w-xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Cabeçalho do Modal -->
+        <div class="bg-emerald-900 p-4 border-b border-emerald-700 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img id="modal-foto" src="" alt="Foto" class="w-12 h-12 rounded-full object-cover border-2 border-emerald-400">
+                <div>
+                    <h3 id="modal-titulo-setor" class="text-base font-bold text-white">Nome do Setor</h3>
+                    <p id="modal-sub-responsavel" class="text-xs text-emerald-300">Responsável: Nome do Colaborador</p>
+                </div>
+            </div>
+            <button onclick="fecharModalAuditoria()" class="text-slate-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Conteúdo do Modal -->
+        <div class="p-5 space-y-4 overflow-y-auto max-h-[75vh]">
+            <!-- Alerta de Segurança (Caso haja PT) -->
+            <div id="modal-alerta-pt" class="hidden bg-amber-900/60 border border-amber-500 text-amber-300 p-2.5 rounded-lg text-xs flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 animate-bounce"></i>
+                <span id="modal-texto-alerta-pt">Este setor possui Permissão de Trabalho (PT) ativa hoje. Atenção redobrada na auditoria!</span>
+            </div>
+
+            <!-- BLOCO CRÍTICO: GESTÃO DE OBRAS NA LOCALIDADE -->
+            <div class="bg-gradient-to-r from-amber-950/70 to-slate-900 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between border-b border-amber-600/50 pb-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hard-hat" class="w-5 h-5 text-amber-400 animate-pulse"></i>
+                        <h4 class="text-xs font-black text-amber-400 uppercase tracking-wider">Gestão de Obra Crítica no Setor</h4>
+                    </div>
+                    <label class="flex items-center gap-1.5 cursor-pointer bg-black/60 px-2.5 py-1 rounded border border-amber-500">
+                        <input type="checkbox" id="modal-obra-ativa" onchange="toggleCamposObraModal(this.checked)" class="w-4 h-4 rounded text-amber-500 focus:ring-0 accent-amber-500 bg-slate-900 border-slate-700">
+                        <span class="text-xs font-extrabold text-amber-300">OBRA ATIVA AQUI</span>
+                    </label>
+                </div>
+
+                <div id="campos-detalhes-obra" class="space-y-2 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-300 text-[10px] uppercase mb-0.5">Tipo de Obra / Escopo</label>
+                            <input type="text" id="modal-obra-tipo" class="w-full bg-emerald-950/90 border border-amber-600/60 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Ex: Manutenção de Hidrante / Civil / Asfalto">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-300 text-[10px] uppercase mb-0.5">Empresa Executora (Contratada)</label>
+                            <input type="text" id="modal-obra-empresa" class="w-full bg-emerald-950/90 border border-amber-600/60 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Ex: Construtora Alfa">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-300 text-[10px] uppercase mb-0.5">Responsável pela Obra</label>
+                            <input type="text" id="modal-obra-responsavel" class="w-full bg-emerald-950/90 border border-amber-600/60 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Encarregado / Engenheiro">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-300 text-[10px] uppercase mb-0.5">Telefone de Contato / Emergência</label>
+                            <input type="text" id="modal-obra-telefone" class="w-full bg-emerald-950/90 border border-amber-600/60 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="(11) 99999-9999">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-300 text-[10px] uppercase mb-0.5">SSMA Responsável</label>
+                            <input type="text" id="modal-obra-ssma" class="w-full bg-emerald-950/90 border border-amber-600/60 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Técnico SSMA Vibra">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seleção Rápida de Status do Setor -->
+            <div>
+                <label class="block text-xs font-bold text-emerald-400 uppercase mb-2">Status Geral da Operação</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="selecionarStatusModal('pendente')" id="btn-status-pendente" class="py-2 text-xs font-bold rounded-lg border transition-all bg-slate-900/80 border-slate-700 text-slate-300 hover:bg-slate-800">
+                        🔵 Pendente
+                    </button>
+                    <button onclick="selecionarStatusModal('conforme')" id="btn-status-conforme" class="py-2 text-xs font-bold rounded-lg border transition-all bg-emerald-950 border-emerald-800 text-emerald-300 hover:bg-emerald-900">
+                        🟢 Conforme
+                    </button>
+                    <button onclick="selecionarStatusModal('atencao')" id="btn-status-atencao" class="py-2 text-xs font-bold rounded-lg border transition-all bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900">
+                        🟡 Atenção
+                    </button>
+                    <button onclick="selecionarStatusModal('critico')" id="btn-status-critico" class="py-2 text-xs font-bold rounded-lg border transition-all bg-red-950 border-red-800 text-red-300 hover:bg-red-900">
+                        🔴 Crítico
+                    </button>
+                </div>
+            </div>
+
+            <!-- Checklist de 9 Itens da Base BAVGRU com Seletor Explícito -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-xs font-bold text-emerald-400 uppercase">Checklist de Verificação Semanal</label>
+                    <span class="text-[10px] text-slate-400 font-semibold">C = Conforme | NC = Não Conforme | - = Não Avaliado</span>
+                </div>
+                <div class="bg-emerald-900/40 p-3.5 rounded-lg border border-emerald-800 space-y-2" id="container-checklists-modal">
+                    <!-- Injetado dinamicamente com botões de 3 estados -->
+                </div>
+            </div>
+
+            <!-- Campo de Observações do Supervisor -->
+            <div>
+                <label for="modal-observacoes" class="block text-xs font-bold text-emerald-400 uppercase mb-1.5">Comentários e Desvios Observados</label>
+                <textarea id="modal-observacoes" rows="2.5" class="w-full bg-emerald-950 border border-emerald-800 rounded-lg p-2.5 text-xs text-white placeholder-emerald-800 focus:outline-none focus:border-emerald-500" placeholder="Digite detalhes das não conformidades, ações de pista ou observações de campo..."></textarea>
+            </div>
+        </div>
+
+        <!-- Botões de Ações do Modal -->
+        <div class="bg-emerald-900/60 p-3.5 border-t border-emerald-700 flex justify-between items-center">
+            <button onclick="limparLancamentoSetor()" class="text-xs font-bold px-3 py-2 rounded bg-red-950/80 border border-red-700 text-red-300 hover:bg-red-900 transition-colors flex items-center gap-1.5">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                Limpar / Resetar Lançamento
+            </button>
+            <div class="flex gap-2">
+                <button onclick="fecharModalAuditoria()" class="px-4 py-2 text-xs font-bold rounded text-slate-400 hover:text-white transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="salvarAuditoriaSetor()" class="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-5 py-2 rounded text-xs transition-colors shadow-lg">
+                    Salvar Auditoria & Obra
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DETALHES INSTITUCIONAIS DA BASE BAVGRU (PONTO DOURADO) -->
+<div id="modal-institucional-base" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur p-4">
+    <div class="bg-emerald-950 border-2 border-amber-600 max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header do Modal Base -->
+        <div class="bg-gradient-to-r from-emerald-900 to-emerald-950 p-5 border-b border-amber-600 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-amber-500/10 border-2 border-amber-500 flex items-center justify-center text-amber-500">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Base de Aviação de Guarulhos (BAVGRU)</h3>
+                    <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Unidade Operacional Estratégica — Vibra Energia</p>
+                </div>
+            </div>
+            <button onclick="fecharModalInstitucional()" class="text-slate-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Conteúdo do Modal Base -->
+        <div class="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Seção Efetivo -->
+                <div class="bg-emerald-900/40 p-4 rounded-xl border border-emerald-800 space-y-3">
+                    <h4 class="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 border-b border-emerald-800 pb-1.5">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        Efetivo Operacional (119 Pessoas)
+                    </h4>
+                    <ul class="space-y-1.5 text-xs font-medium text-emerald-100">
+                        <li class="flex justify-between"><span>01 Gerente de Operações (Ruan)</span> <span class="text-slate-400">01</span></li>
+                        <li class="flex justify-between"><span>01 Supervisor de Pista (Marcos)</span> <span class="text-slate-400">01</span></li>
+                        <li class="flex justify-between"><span>Líderes de Abastecimento</span> <span class="text-slate-400">03</span></li>
+                        <li class="flex justify-between"><span>Técnica de Segurança PL</span> <span class="text-slate-400">02</span></li>
+                        <li class="flex justify-between"><span>Administrativo JR</span> <span class="text-slate-400">01</span></li>
+                        <li class="flex justify-between"><span>Jovem Aprendiz</span> <span class="text-slate-400">04</span></li>
+                        <li class="flex justify-between"><span>Abastecedores Seniores (SR)</span> <span class="text-emerald-400 font-bold">16</span></li>
+                        <li class="flex justify-between"><span>Abastecedores Plenos (PL)</span> <span class="text-emerald-400 font-bold">20</span></li>
+                        <li class="flex justify-between"><span>Abastecedores Juniores (JR)</span> <span class="text-emerald-400 font-bold">71</span></li>
+                    </ul>
+                </div>
+
+                <!-- Seção Ativos e Capacidade -->
+                <div class="space-y-4">
+                    <div class="bg-emerald-900/40 p-4 rounded-xl border border-emerald-800 space-y-3">
+                        <h4 class="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 border-b border-emerald-800 pb-1.5">
+                            <i data-lucide="truck" class="w-4 h-4"></i>
+                            Frota de Equipamentos (34 Ativos)
+                        </h4>
+                        <ul class="space-y-1.5 text-xs text-emerald-100">
+                            <li class="flex justify-between"><span>Caminhões Servidores de Pista</span> <span class="text-white font-bold">24</span></li>
+                            <li class="flex justify-between"><span>Caminhões Tanque (CTs)</span> <span class="text-white font-bold">10</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-emerald-900/40 p-4 rounded-xl border border-emerald-800 space-y-3">
+                        <h4 class="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 border-b border-emerald-800 pb-1.5">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            Volumetria e Operações Diárias
+                        </h4>
+                        <ul class="space-y-1.5 text-xs text-emerald-100">
+                            <li class="flex justify-between"><span>Média de Operações Diárias</span> <span class="text-emerald-400 font-extrabold">270 atendimentos</span></li>
+                            <li class="flex justify-between"><span>Volume Médio Comercializado</span> <span class="text-emerald-400 font-extrabold">3,7 Milhões de Litros / Dia</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rodapé do Modal Base -->
+        <div class="bg-emerald-900/60 p-4 border-t border-amber-600 flex justify-end">
+            <button onclick="fecharModalInstitucional()" class="bg-amber-500 hover:bg-amber-400 text-emerald-950 font-black px-6 py-2 rounded text-xs transition-colors">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTAINER DE NOTIFICAÇÃO TOAST -->
+<div id="toast-notificacao" class="hidden fixed bottom-6 right-6 z-[200] bg-emerald-500 border border-emerald-400 text-emerald-950 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 transition-all transform translate-y-10 opacity-0">
+    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+    <span id="toast-mensagem" class="text-xs font-bold">Configurações salvas com sucesso!</span>
+</div>
+
+<!-- TEMPLATE INVISÍVEL PARA GERAÇÃO DO RELATÓRIO MENSAL EM PDF -->
+<div id="template-relatorio-pdf-mensal" class="hidden bg-white text-slate-900 p-8 font-sans">
+    <!-- Gerado dinamicamente para o html2pdf -->
+</div>
+
+<!-- LOGICA OPERACIONAL COMPLETA (JAVASCRIPT) -->
+<script>
+    // --- REGISTRO DO SERVICE WORKER (PWA) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('PWA ServiceWorker ativo:', reg.scope))
+                .catch(err => console.warn('PWA ServiceWorker aviso:', err));
+        });
+    }
+
+    // --- CADASTRO DE COLABORADORES BAVGRU ---
+    const colaboradores = {
+        'ruan': { id: 'ruan', nome: 'Ruan', cargo: 'Guardião das Instalações', foto: 'Ger Ruan.png', turno: '07h às 16h', hierarquia: 1 },
+        'marcos': { id: 'marcos', nome: 'Marcos', cargo: 'Supervisor Geral', foto: 'Sup Marcos.png', turno: 'Todos os Turnos', hierarquia: 2 },
+        'dionisio': { id: 'dionisio', nome: 'Dionísio', cargo: 'Líder de Abastecimento', foto: 'Foto dionislio, atualizada.png', turno: '07h às 16h', hierarquia: 3 },
+        'andre': { id: 'andre', nome: 'André', cargo: 'Líder de Abastecimento', foto: 'LT André.png', turno: '15:15h às 23:58h', hierarquia: 4 },
+        'brasil': { id: 'brasil', nome: 'Brasil', cargo: 'Líder de Abastecimento', foto: 'LT Brasil.png', turno: '15:15h às 23:58h', hierarquia: 5 },
+        'idenilson': { id: 'idenilson', nome: 'Idenilson', cargo: 'Guardião da Base', foto: 'Guard Idenilson.png', turno: '06h às 15h', hierarquia: 6 },
+        'marcio': { id: 'marcio', nome: 'Márcio', cargo: 'Guardião da Base', foto: 'Guard Marcio.png', turno: '15:15h às 23:58h', hierarquia: 7 },
+        'gustavo': { id: 'gustavo', nome: 'Gustavo', cargo: 'Guardião da Base', foto: 'Guar Gustavo.png', turno: '23h às 06h', hierarquia: 8 },
+        'graciete': { id: 'graciete', nome: 'Graciette', cargo: 'Técnica de Segurança PL', foto: 'Seg Graciete.png', turno: '07h às 16h', hierarquia: 9 }
+    };
+
+    // --- CADASTRO DE ÁREAS DE PISTA ---
+    const areasOperacionais = {
+        'instalacoes': { id: 'instalacoes', nome: 'Instalações', top: '60%', left: '18%', icone: 'shield-check', desc: 'Prédios, hangares, área técnica e rotinas administrativas.' },
+        'pool': { id: 'pool', nome: 'Pool', top: '58%', left: '23%', icone: 'droplet', desc: 'Pool de abastecimento e recebimento de cargas.' },
+        'vip': { id: 'vip', nome: 'VIP', top: '72%', left: '25%', icone: 'crown', desc: 'Área vip de pátio e movimentação executiva.' },
+        'manutencao': { id: 'manutencao', nome: 'Manutenção', top: '67%', left: '14%', icone: 'wrench', desc: 'Oficina, hangar de ferramentaria e inspeção preventiva.' },
+        'operacoes': { id: 'operacoes', nome: 'Sala de operação/teste', top: '51%', left: '12%', icone: 'sliders', desc: 'Sala de monitoramento e testes químicos.' },
+        'enchimento': { id: 'enchimento', nome: 'Área de Enchimento', top: '80%', left: '18%', icone: 'package', desc: 'Área de enchimento e testes de vazão.' },
+        'base': { id: 'base', nome: 'Base', top: '78%', left: '11%', icone: 'home', desc: 'Hangar da base geral e pátio administrativo.' },
+        'abastecimento': { id: 'abastecimento', nome: 'Área de Abastecimento', top: '64%', left: '55%', icone: 'plane', desc: 'Auditoria de pistas de abastecimento e caminhões servidores.' },
+        'abastecimento-t3': { id: 'abastecimento-t3', nome: 'Abastecimento T3', top: '42%', left: '71%', icone: 'plane-takeoff', desc: 'Frentes de trabalho de pista no Terminal 3 Flex.' }
+    };
+
+    // --- DIRETRIZES DE CHECKLIST (Dicas Operacionais para Hover) ---
+    const checklistDiretrizes = {
+        'limpeza': 'Avaliar limpeza do asfalto, recolhimento de FOD e descarte correto de resíduos.',
+        'organizacao': 'Verificar alinhamento de equipamentos, demarcação de faixas e ordenação de caixas.',
+        'epis': 'Auditar uso obrigatório de protetor auricular, óculos, luvas e calçado de pista.',
+        'pessoas': 'Verificar comportamento seguro, identificação de crachás/coletes e postura da equipe.',
+        'atendimento': 'Monitorar a cordialidade, pontualidade e disciplina no atendimento às tripulações.',
+        'instalacoes': 'Testar sistemas elétricos básicos, lâmpadas de aviso, portões e vazamentos prediais.',
+        'equipamentos': 'Garantir funcionamento de geradores, rádio de comunicação e ferramentas de apoio.',
+        'procedimentos': 'Garantir preenchimento dos diários de bordo de pistas e pastas de vistorias.',
+        'melhorias': 'Registrar oportunidades de melhoria contínua, sugestões e ideias operacionais.'
+    };
+
+    const nomesItensChecklist = {
+        'limpeza': '01. Limpeza',
+        'organizacao': '02. Organização dos equipamentos',
+        'epis': '03. Uso correto dos EPIs',
+        'pessoas': '04. Pessoas',
+        'atendimento': '05. Padrão de atendimento',
+        'instalacoes': '06. Manutenção estrutural',
+        'equipamentos': '07. Equipamento',
+        'procedimentos': '08. Procedimentos',
+        'melhorias': '09. Pontos de melhorias'
+    };
+
+    // --- VARIÁVEIS GLOBAIS DE ESTADO ---
+    let semanaAtiva = 34; // Semana inicial padrão
+    let abaAtiva = 'mapa';
+    let escalaGlobal = {}; // Carregada do localStorage por semana
+    let graficoConformidade = null;
+    let setorSelecionadoModal = '';
+    let checklistTempModal = {}; // Armazena escolhas temporárias no modal
+
+    // --- COORDENADAS DO PERÍODO POR SEMANA ---
+    function obterPeriodoSemana(semana) {
+        const ano = 2026;
+        const dataInicioRef = new Date(ano, 7, 17);
+        const diasDeDeslocamento = (semana - 34) * 7;
+        const dataInicio = new Date(dataInicioRef.getTime() + (diasDeDeslocamento * 24 * 60 * 60 * 1000));
+        const dataFim = new Date(dataInicio.getTime() + (6 * 24 * 60 * 60 * 1000));
+
+        const formatarData = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return `${formatarData(dataInicio)} a ${formatarData(dataFim)}`;
+    }
+
+    // --- INICIALIZADOR OPERACIONAL ---
+    window.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+        configurarEscalaInicialPadrao();
+        carregarDadosSemana();
+        iniciarRastreadorTempoReal();
+    });
+
+    // --- GERAÇÃO DE BANCO DE DADOS LOCAL ---
+    function configurarEscalaInicialPadrao() {
+        for (let s = 34; s <= 53; s++) {
+            const chave = `BAVGRU_SEMANA_${s}`;
+            let dadosSalvos = null;
+            try {
+                dadosSalvos = JSON.parse(localStorage.getItem(chave));
+            } catch (e) { dadosSalvos = null; }
+
+            const alocacoesIniciais = {
+                'instalacoes': 'ruan',
+                'pool': 'gustavo',
+                'vip': 'marcos',
+                'manutencao': 'brasil',
+                'operacoes': 'graciete',
+                'enchimento': 'marcio',
+                'base': 'idenilson',
+                'abastecimento': 'dionisio',
+                'abastecimento-t3': 'andre'
+            };
+
+            const defaultObras = {};
+            const defaultTratamentos = {};
+            Object.keys(areasOperacionais).forEach(id => {
+                defaultObras[id] = { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
+                defaultTratamentos[id] = {};
+            });
+
+            if (!dadosSalvos) {
+                const defaultData = {
+                    alocacoes: alocacoesIniciais,
+                    status: {
+                        'instalacoes': 'pendente', 'pool': 'pendente', 'vip': 'pendente',
+                        'manutencao': 'pendente', 'operacoes': 'pendente', 'enchimento': 'pendente',
+                        'base': 'pendente', 'abastecimento': 'pendente', 'abastecimento-t3': 'pendente'
+                    },
+                    checklists: {
+                        'instalacoes': {}, 'pool': {}, 'vip': {}, 'manutencao': {}, 'operacoes': {}, 'enchimento': {}, 'base': {}, 'abastecimento': {}, 'abastecimento-t3': {}
+                    },
+                    comentarios: {
+                        'instalacoes': '', 'pool': '', 'vip': '', 'manutencao': '', 'operacoes': '', 'enchimento': '', 'base': '', 'abastecimento': '', 'abastecimento-t3': ''
+                    },
+                    ferias: [],
+                    pts: {
+                        'instalacoes': '', 'pool': '', 'vip': '', 'manutencao': '', 'operacoes': '', 'enchimento': '', 'base': '', 'abastecimento': '', 'abastecimento-t3': ''
+                    },
+                    obras: defaultObras,
+                    tratamentos: defaultTratamentos
+                };
+                localStorage.setItem(chave, JSON.stringify(defaultData));
+            } else {
+                if (!dadosSalvos.obras) dadosSalvos.obras = defaultObras;
+                if (!dadosSalvos.tratamentos) dadosSalvos.tratamentos = defaultTratamentos;
+                localStorage.setItem(chave, JSON.stringify(dadosSalvos));
+            }
+        }
+    }
+
+    // --- CARREGAR DADOS DA SEMANA SELECIONADA ---
+    function carregarDadosSemana() {
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        escalaGlobal = JSON.parse(localStorage.getItem(chave)) || {};
+        if (!escalaGlobal.obras) {
+            escalaGlobal.obras = {};
+            Object.keys(areasOperacionais).forEach(id => {
+                escalaGlobal.obras[id] = { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
+            });
+        }
+        if (!escalaGlobal.tratamentos) {
+            escalaGlobal.tratamentos = {};
+            Object.keys(areasOperacionais).forEach(id => {
+                escalaGlobal.tratamentos[id] = {};
+            });
+        }
+
+        // Atualizar textos e indicadores do cabeçalho
+        document.getElementById('label-semana').innerText = `Semana ${semanaAtiva}`;
+        document.getElementById('label-periodo').innerText = obterPeriodoSemana(semanaAtiva);
+        document.getElementById('admin-semana-ativa').innerText = `Semana ${semanaAtiva}`;
+
+        // Atualizar visualizações
+        renderizarMapaFisico();
+        renderizarCardsResponsabilidade();
+        analisarConformidadePista();
+        renderizarListaFeriasAdmin();
+        renderizarTabelaAtribuicoesAdmin();
+        atualizarSinalizacaoPTs();
+        atualizarSinalizacaoObrasRodape();
+    }
+
+    // --- ALTERAR NAVEGAÇÃO DE SEMANA ---
+    function mudarSemana(deslocamento) {
+        const novaSemana = semanaAtiva + deslocamento;
+        if (novaSemana >= 34 && novaSemana <= 53) {
+            semanaAtiva = novaSemana;
+            carregarDadosSemana();
+        }
+    }
+
+    // --- CALENDÁRIO INTERATIVO ---
+    function abrirCalendarioCompleto() {
+        document.getElementById('calendario-real').showPicker();
+    }
+
+    function selecionarDataCalendario(valorData) {
+        if (!valorData) return;
+        const dataSelecionada = new Date(valorData);
+        const dataReferencia = new Date(2026, 7, 17);
+
+        const diferencaMilissegundos = dataSelecionada.getTime() - dataReferencia.getTime();
+        const diferencaDias = Math.floor(diferencaMilissegundos / (1000 * 60 * 60 * 24));
+
+        let semanaCalculada = 34 + Math.floor(diferencaDias / 7);
+
+        if (semanaCalculada < 34) semanaCalculada = 34;
+        if (semanaCalculada > 53) semanaCalculada = 53;
+
+        semanaAtiva = semanaCalculada;
+        carregarDadosSemana();
+        exibirNotificacaoToast(`Carregada a Semana ${semanaCalculada} correspondente à data escolhida!`);
+    }
+
+    // --- SALVAR INFORMAÇÕES DO BOTÃO GLOBAL ---
+    function salvarInformacoesGlobais() {
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+        exibirNotificacaoToast(`Todas as configurações da Semana ${semanaAtiva} foram salvas!`);
+        analisarConformidadePista();
+    }
+
+    // --- EXIBIR TOAST DE SUCESSO ---
+    function exibirNotificacaoToast(mensagem) {
+        const toast = document.getElementById('toast-notificacao');
+        const msg = document.getElementById('toast-mensagem');
+        msg.innerText = mensagem;
+
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+            toast.classList.remove('translate-y-10', 'opacity-0');
+        }, 10);
+
+        setTimeout(() => {
+            toast.classList.add('translate-y-10', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 300);
+        }, 3000);
+    }
+
+    // --- SINALIZADOR DA BARRA DE PTs ---
+    function atualizarSinalizacaoPTs() {
+        const container = document.getElementById('container-pts-rodape');
+        const areasComPT = Object.keys(escalaGlobal.pts || {}).filter(area => escalaGlobal.pts[area] && escalaGlobal.pts[area].trim() !== '');
+
+        if (areasComPT.length === 0) {
+            container.innerHTML = `
+                <i data-lucide="file-warning" class="w-4 h-4 text-emerald-400"></i>
+                <span class="text-emerald-400">Nenhuma Permissão de Trabalho (PT) cadastrada para esta semana.</span>
+            `;
+        } else {
+            const listagemHtml = areasComPT.map(area => {
+                const areaInfo = areasOperacionais[area];
+                const ptCodigo = escalaGlobal.pts[area];
+                return `<span class="bg-amber-950/80 border border-amber-500 px-2 py-0.5 rounded text-amber-300 font-bold">${areaInfo.nome}: ${ptCodigo}</span>`;
+            }).join(' ');
+
+            container.innerHTML = `
+                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400 animate-pulse"></i>
+                <span class="text-amber-300 mr-2">PTs Emitidas:</span>
+                <div class="flex flex-wrap gap-1">${listagemHtml}</div>
+            `;
+        }
+        lucide.createIcons();
+    }
+
+    // --- SINALIZADOR DA BARRA DE OBRAS CRÍTICAS NO RODAPÉ ---
+    function atualizarSinalizacaoObrasRodape() {
+        const container = document.getElementById('container-obras-rodape');
+        if (!container) return;
+
+        const obrasAtivas = Object.keys(areasOperacionais).filter(areaId => {
+            return escalaGlobal.obras && escalaGlobal.obras[areaId] && escalaGlobal.obras[areaId].ativa;
+        });
+
+        if (obrasAtivas.length === 0) {
+            container.innerHTML = `
+                <div class="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Nenhuma obra civil ou intervenção de terceiros ativa na base esta semana.</span>
+                </div>
+            `;
+        } else {
+            const tags = obrasAtivas.map(areaId => {
+                const a = areasOperacionais[areaId];
+                const o = escalaGlobal.obras[areaId];
+                return `
+                    <div class="bg-gradient-to-r from-amber-950 to-red-950 border border-amber-500 text-white px-2.5 py-1 rounded flex items-center gap-2 shadow-lg">
+                        <span class="font-extrabold text-amber-400 flex items-center gap-1">
+                            <i data-lucide="hard-hat" class="w-3.5 h-3.5 text-amber-300"></i>
+                            ${a.nome}:
+                        </span>
+                        <span class="text-amber-200 font-bold">${o.tipo || 'Obra Geral'}</span>
+                        <span class="text-[10px] text-slate-300">(${o.empresa || 'Contratada'} | SSMA: ${o.ssma || 'Plantão'} | Tel: ${o.telefone || 'N/A'})</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="flex items-center gap-1.5 text-amber-300 font-black tracking-wider uppercase">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 animate-bounce"></i>
+                    OBRAS CRÍTICAS EM ANDAMENTO:
+                </div>
+                <div class="flex flex-wrap gap-1.5">${tags}</div>
+            `;
+        }
+        lucide.createIcons();
+    }
+
+    // --- RENDERIZAR MAPA FÍSICO COM PINS INTERATIVOS & OBRAS ---
+    function renderizarMapaFisico() {
+        const container = document.getElementById('pins-mapa-container');
+        container.innerHTML = '';
+
+        // 1. Injetar Ponto Institucional BAVGRU (Dourado)
+        const basePin = document.createElement('div');
+        basePin.className = 'map-pin';
+        basePin.style.top = '30%';
+        basePin.style.left = '16%';
+        basePin.setAttribute('onclick', 'abrirModalInstitucional()');
+        basePin.innerHTML = `
+            <div class="beacon-signal animate-beacon-gold"></div>
+            <div class="relative z-20 w-10 h-10 rounded-full border-2 border-amber-500 bg-emerald-950 shadow-xl flex items-center justify-center text-amber-400">
+                <i data-lucide="building-2" class="w-5 h-5"></i>
+            </div>
+            <div class="tooltip-pista">
+                <h4 class="font-extrabold text-amber-400">Base de Aviação de Guarulhos (HQ)</h4>
+                <p class="text-[10px] text-slate-300">Clique para ver efetivo, frota e estatísticas diárias.</p>
+            </div>
+        `;
+        container.appendChild(basePin);
+
+        // 2. Injetar as 9 áreas operacionais com fotos dos colaboradores e selo de obra crítica
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const area = areasOperacionais[areaId];
+            const colabId = escalaGlobal.alocacoes[areaId];
+            const colab = colaboradores[colabId] || { nome: 'Sem Alocação', cargo: 'Operador', foto: 'default.png' };
+            const status = escalaGlobal.status[areaId] || 'pendente';
+            const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false };
+
+            // Mapeamento de Beacons Luminosos de Pista
+            let beaconClass = 'animate-beacon-blue';
+            if (status === 'conforme') beaconClass = 'animate-beacon-green';
+            if (status === 'atencao') beaconClass = 'animate-beacon-yellow';
+            if (status === 'critico') beaconClass = 'animate-beacon-red';
+
+            // Se tem obra crítica ativa, intensificar beacon
+            if (obra.ativa && status === 'pendente') {
+                beaconClass = 'animate-beacon-yellow';
+            }
+
+            const pin = document.createElement('div');
+            pin.className = 'map-pin';
+            pin.style.top = area.top;
+            pin.style.left = area.left;
+            pin.setAttribute('onclick', `abrirModalAuditoria('${areaId}')`);
+
+            let badgeObraHtml = '';
+            let obraTooltipInfo = '';
+            if (obra.ativa) {
+                badgeObraHtml = `
+                    <div class="badge-obra-critica">
+                        <i data-lucide="hard-hat" class="w-2.5 h-2.5"></i> OBRA
+                    </div>
+                `;
+                obraTooltipInfo = `
+                    <div class="mt-1 pt-1 border-t border-amber-500/60 text-[10px] text-amber-300 font-bold">
+                        <span class="text-red-400 font-black">🚧 OBRA CRÍTICA EM ANDAMENTO</span><br>
+                        <span>${obra.tipo || 'Serviço de Pista'}</span><br>
+                        <span class="text-slate-300 font-normal">Empresa: ${obra.empresa || 'N/A'} | Contato: ${obra.telefone || 'N/A'}</span><br>
+                        <span class="text-emerald-400 font-normal">SSMA: ${obra.ssma || 'Em Acompanhamento'}</span>
+                    </div>
+                `;
+            }
+
+            pin.innerHTML = `
+                <div class="beacon-signal ${beaconClass}"></div>
+                ${badgeObraHtml}
+                <div class="relative z-20 w-11 h-11 rounded-full border-2 ${obra.ativa ? 'border-amber-400 ring-2 ring-red-500' : 'border-emerald-500'} overflow-hidden shadow-2xl bg-slate-900 flex items-center justify-center">
+                    <img src="${colab.foto}" alt="${colab.nome}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150'">
+                    <span class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-900 border border-emerald-400 rounded-full flex items-center justify-center text-white text-[9px] font-bold">
+                        <i data-lucide="${area.icone}" class="w-2.5 h-2.5 text-emerald-300"></i>
+                    </span>
+                </div>
+                <div class="tooltip-pista">
+                    <h4 class="font-extrabold text-white text-xs">${colab.nome}</h4>
+                    <p class="text-[10px] text-emerald-400 font-bold uppercase mb-0.5">${colab.cargo}</p>
+                    <p class="text-[9px] text-slate-300">Responsável pela área: <span class="text-white font-extrabold">${area.nome}</span></p>
+                    ${obraTooltipInfo}
+                </div>
+            `;
+            container.appendChild(pin);
+        });
+
+        lucide.createIcons();
+    }
+
+    // --- RENDERIZAR CARDS DE RESPONSABILIDADE ---
+    function renderizarCardsResponsabilidade() {
+        const container = document.getElementById('grid-responsaveis-cards');
+        container.innerHTML = '';
+
+        const listaOrdenada = Object.keys(areasOperacionais).map(areaId => {
+            const colabId = escalaGlobal.alocacoes[areaId];
+            const colab = colaboradores[colabId] || { nome: 'Não Escalado', cargo: 'Colaborador', foto: 'default.png', hierarquia: 99 };
+            const area = areasOperacionais[areaId];
+            const status = escalaGlobal.status[areaId] || 'pendente';
+            const pt = escalaGlobal.pts[areaId] || '';
+            const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false };
+            return { areaId, area, colab, status, pt, obra };
+        }).sort((a, b) => a.colab.hierarquia - b.colab.hierarquia);
+
+        listaOrdenada.forEach(item => {
+            let glowClass = 'border-blue-500/40 bg-slate-900/80 shadow-blue-900/10 text-slate-300';
+            let statusLabel = '🔵 PENDENTE';
+
+            if (item.status === 'conforme') {
+                glowClass = 'border-emerald-500 bg-emerald-950/90 shadow-emerald-950/50 text-emerald-100';
+                statusLabel = '🟢 CONFORME';
+            } else if (item.status === 'atencao') {
+                glowClass = 'border-amber-500 bg-amber-950/90 shadow-amber-950/50 text-amber-100 animate-pulse';
+                statusLabel = '🟡 ATENÇÃO';
+            } else if (item.status === 'critico') {
+                glowClass = 'border-red-500 bg-red-950/90 shadow-red-950/50 text-red-100 border-2 animate-bounce';
+                statusLabel = '🔴 CRÍTICO';
+            }
+
+            const possuiQualquerPT = Object.values(escalaGlobal.pts || {}).some(val => val && val.trim() !== '');
+            if (item.colab.id === 'ruan' && possuiQualquerPT) {
+                glowClass = 'border-orange-500 bg-orange-950/95 shadow-orange-950/60 text-orange-100 border-2 animate-pulse';
+                statusLabel = '⚠️ PT EMITIDA EM PÁTIO';
+            }
+
+            let badgeObraCard = '';
+            if (item.obra && item.obra.ativa) {
+                glowClass += ' ring-2 ring-amber-500 shadow-amber-500/30';
+                badgeObraCard = `
+                    <div class="mt-1 px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-500 text-black flex items-center justify-center gap-1 tracking-wider uppercase shadow">
+                        <i data-lucide="hard-hat" class="w-2.5 h-2.5"></i> OBRA ATIVA
+                    </div>
+                `;
+            }
+
+            const card = document.createElement('div');
+            card.className = `p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between items-center text-center ${glowClass}`;
+            card.setAttribute('onclick', `abrirModalAuditoria('${item.areaId}')`);
+
+            card.innerHTML = `
+                <div class="relative w-12 h-12 rounded-full overflow-hidden mb-2 border-2 ${item.obra && item.obra.ativa ? 'border-amber-400' : 'border-emerald-400'} shadow-lg bg-slate-800 flex items-center justify-center">
+                    <img src="${item.colab.foto}" alt="${item.colab.nome}" class="w-full h-full object-cover">
+                </div>
+                <div class="space-y-0.5">
+                    <h3 class="font-extrabold text-white text-xs tracking-tight">${item.colab.nome}</h3>
+                    <p class="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1">${item.area.nome}</p>
+                    <p class="text-[9px] font-bold text-slate-300 leading-none flex items-center justify-center gap-0.5"><i data-lucide="clock" class="w-3 h-3 text-emerald-500"></i> ${item.colab.turno}</p>
+                </div>
+                <div class="mt-2.5 w-full">
+                    <div class="px-2 py-0.5 rounded text-[8px] font-extrabold bg-black/60 tracking-wider">
+                        ${statusLabel}
+                    </div>
+                    ${badgeObraCard}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        const selo = document.getElementById('selo-validacao-pista');
+        selo.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> ESCALA DE TURNO GARANTIDA`;
+
+        lucide.createIcons();
+    }
+
+    // --- MODAL: POPUP DE AUDITORIA, CHECKLIST & GESTÃO DE OBRAS CRÍTICAS ---
+    function abrirModalAuditoria(areaId) {
+        setorSelecionadoModal = areaId;
+        const area = areasOperacionais[areaId];
+        const colabId = escalaGlobal.alocacoes[areaId];
+        const colab = colaboradores[colabId] || { nome: 'Não Escalado', cargo: 'Supervisor', foto: 'default.png' };
+        const status = escalaGlobal.status[areaId] || 'pendente';
+        const pt = escalaGlobal.pts[areaId] || '';
+        const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
+
+        document.getElementById('modal-titulo-setor').innerText = area.nome;
+        document.getElementById('modal-sub-responsavel').innerText = `${colab.nome} — ${colab.cargo}`;
+        document.getElementById('modal-foto').src = colab.foto;
+        document.getElementById('modal-observacoes').value = escalaGlobal.comentarios[areaId] || '';
+
+        // Carregar Campos de Obra
+        const checkObra = document.getElementById('modal-obra-ativa');
+        checkObra.checked = !!obra.ativa;
+        document.getElementById('modal-obra-tipo').value = obra.tipo || '';
+        document.getElementById('modal-obra-empresa').value = obra.empresa || '';
+        document.getElementById('modal-obra-responsavel').value = obra.responsavel || '';
+        document.getElementById('modal-obra-telefone').value = obra.telefone || '';
+        document.getElementById('modal-obra-ssma').value = obra.ssma || '';
+        toggleCamposObraModal(checkObra.checked);
+
+        // Alerta PT
+        const alertaPt = document.getElementById('modal-alerta-pt');
+        if (pt && pt.trim() !== '') {
+            alertaPt.classList.remove('hidden');
+            document.getElementById('modal-texto-alerta-pt').innerText = `⚠️ Permissão de Trabalho (PT: ${pt}) ativa neste setor. Avaliar interferências e medidas de controle!`;
+        } else {
+            alertaPt.classList.add('hidden');
+        }
+
+        selecionarStatusBotaoVisual(status);
+
+        // Copiar checklist atual para o objeto temporário
+        checklistTempModal = Object.assign({}, escalaGlobal.checklists[areaId] || {});
+
+        renderizarChecklistModal(areaId);
+
+        document.getElementById('modal-auditoria').classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    // --- RENDERIZAÇÃO DO CHECKLIST COM SELEÇÃO EXPLÍCITA (C / NC / -) ---
+    function renderizarChecklistModal(areaId) {
+        const containerCheck = document.getElementById('container-checklists-modal');
+        containerCheck.innerHTML = '';
+
+        Object.keys(nomesItensChecklist).forEach(key => {
+            const valorAtual = checklistTempModal[key] || 'none'; // 'ok', 'nc', 'none'
+            const desc = checklistDiretrizes[key];
+
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 rounded-lg bg-emerald-950/60 border border-emerald-850 hover:bg-emerald-900/60 transition-colors relative group';
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                        ${nomesItensChecklist[key]}
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-500 hover:text-white cursor-help"></i>
+                    </span>
+                    <div class="absolute bottom-full left-4 mb-1 hidden group-hover:block bg-slate-900 border border-emerald-600 text-[10px] text-white p-2 rounded-lg shadow-xl max-w-[250px] z-50">
+                        ${desc}
+                    </div>
+                </div>
+                <!-- Seletor Triplo de Estado -->
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="definirEstadoItemChecklist('${key}', 'ok')" class="px-2 py-1 rounded text-[10px] font-black transition-all ${valorAtual === 'ok' ? 'bg-emerald-600 text-white border border-emerald-400 shadow' : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-emerald-300'}">
+                        🟢 Conforme
+                    </button>
+                    <button type="button" onclick="definirEstadoItemChecklist('${key}', 'nc')" class="px-2 py-1 rounded text-[10px] font-black transition-all ${valorAtual === 'nc' ? 'bg-red-600 text-white border border-red-400 shadow animate-pulse' : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-red-300'}">
+                        🔴 Não Conforme
+                    </button>
+                    <button type="button" onclick="definirEstadoItemChecklist('${key}', 'none')" class="px-2 py-1 rounded text-[10px] font-black transition-all ${valorAtual === 'none' ? 'bg-slate-800 text-slate-300 border border-slate-600' : 'bg-slate-950 text-slate-600 border border-slate-800 hover:text-slate-300'}">
+                        ⚪ Limpar
+                    </button>
+                </div>
+            `;
+            containerCheck.appendChild(div);
+        });
+
+        lucide.createIcons();
+    }
+
+    function definirEstadoItemChecklist(itemKey, estado) {
+        checklistTempModal[itemKey] = estado;
+        renderizarChecklistModal(setorSelecionadoModal);
+    }
+
+    function limparLancamentoSetor() {
+        const areaId = setorSelecionadoModal;
+        if (!confirm(`Deseja realmente limpar todos os lançamentos e checklist do setor ${areasOperacionais[areaId].nome}?`)) {
+            return;
+        }
+
+        escalaGlobal.status[areaId] = 'pendente';
+        escalaGlobal.comentarios[areaId] = '';
+        escalaGlobal.checklists[areaId] = {};
+        if (escalaGlobal.tratamentos && escalaGlobal.tratamentos[areaId]) {
+            escalaGlobal.tratamentos[areaId] = {};
+        }
+
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+
+        fecharModalAuditoria();
+        renderizarMapaFisico();
+        renderizarCardsResponsabilidade();
+        analisarConformidadePista();
+        exibirNotificacaoToast(`Lançamentos do setor ${areasOperacionais[areaId].nome} foram limpos com sucesso!`);
+    }
+
+    function toggleCamposObraModal(ativa) {
+        const bloco = document.getElementById('campos-detalhes-obra');
+        if (ativa) {
+            bloco.classList.remove('opacity-40');
+            bloco.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
+        } else {
+            bloco.classList.add('opacity-40');
+            bloco.querySelectorAll('input').forEach(i => i.setAttribute('disabled', 'true'));
+        }
+    }
+
+    function fecharModalAuditoria() {
+        document.getElementById('modal-auditoria').classList.add('hidden');
+    }
+
+    let statusSelecionadoModalTemp = 'pendente';
+
+    function selecionarStatusModal(status) {
+        statusSelecionadoModalTemp = status;
+        selecionarStatusBotaoVisual(status);
+    }
+
+    function selecionarStatusBotaoVisual(status) {
+        statusSelecionadoModalTemp = status;
+        const botoes = {
+            'pendente': document.getElementById('btn-status-pendente'),
+            'conforme': document.getElementById('btn-status-conforme'),
+            'atencao': document.getElementById('btn-status-atencao'),
+            'critico': document.getElementById('btn-status-critico')
+        };
+
+        Object.keys(botoes).forEach(k => {
+            botoes[k].className = "py-2 text-xs font-bold rounded-lg border transition-all text-slate-400 border-slate-800 bg-slate-950 hover:bg-slate-900";
+        });
+
+        if (status === 'pendente') {
+            botoes.pendente.className = "py-2 text-xs font-extrabold rounded-lg border-2 transition-all bg-blue-900 text-blue-100 border-blue-500 shadow-lg shadow-blue-500/20";
+        } else if (status === 'conforme') {
+            botoes.conforme.className = "py-2 text-xs font-extrabold rounded-lg border-2 transition-all bg-emerald-900 text-emerald-100 border-emerald-500 shadow-lg shadow-emerald-500/20";
+        } else if (status === 'atencao') {
+            botoes.atencao.className = "py-2 text-xs font-extrabold rounded-lg border-2 transition-all bg-amber-900 text-amber-100 border-amber-500 shadow-lg shadow-amber-500/20";
+        } else if (status === 'critico') {
+            botoes.critico.className = "py-2 text-xs font-extrabold rounded-lg border-2 transition-all bg-red-900 text-red-100 border-red-500 shadow-lg shadow-red-500/20";
+        }
+    }
+
+    // --- SALVAR AUDITORIA & OBRA ---
+    function salvarAuditoriaSetor() {
+        const areaId = setorSelecionadoModal;
+        escalaGlobal.status[areaId] = statusSelecionadoModalTemp;
+        escalaGlobal.comentarios[areaId] = document.getElementById('modal-observacoes').value;
+
+        // Salvar Informações de Obra
+        if (!escalaGlobal.obras) escalaGlobal.obras = {};
+        const obraAtiva = document.getElementById('modal-obra-ativa').checked;
+        escalaGlobal.obras[areaId] = {
+            ativa: obraAtiva,
+            tipo: document.getElementById('modal-obra-tipo').value.trim(),
+            empresa: document.getElementById('modal-obra-empresa').value.trim(),
+            responsavel: document.getElementById('modal-obra-responsavel').value.trim(),
+            telefone: document.getElementById('modal-obra-telefone').value.trim(),
+            ssma: document.getElementById('modal-obra-ssma').value.trim()
+        };
+
+        // Salvar Checklist com estados explícitos
+        if (!escalaGlobal.checklists[areaId]) escalaGlobal.checklists[areaId] = {};
+        escalaGlobal.checklists[areaId] = Object.assign({}, checklistTempModal);
+
+        // Inicializar estrutura de tratamentos para itens NC
+        if (!escalaGlobal.tratamentos) escalaGlobal.tratamentos = {};
+        if (!escalaGlobal.tratamentos[areaId]) escalaGlobal.tratamentos[areaId] = {};
+
+        Object.keys(checklistTempModal).forEach(itemKey => {
+            if (checklistTempModal[itemKey] === 'nc' && !escalaGlobal.tratamentos[areaId][itemKey]) {
+                escalaGlobal.tratamentos[areaId][itemKey] = {
+                    acao: '',
+                    responsavel: escalaGlobal.alocacoes[areaId] ? colaboradores[escalaGlobal.alocacoes[areaId]].nome : 'Marcos',
+                    status: 'Pendente',
+                    data: new Date().toLocaleDateString('pt-BR')
+                };
+            }
+        });
+
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+
+        fecharModalAuditoria();
+        renderizarMapaFisico();
+        renderizarCardsResponsabilidade();
+        analisarConformidadePista();
+        atualizarSinalizacaoObrasRodape();
+        renderizarTabelaAtribuicoesAdmin();
+        exibirNotificacaoToast(`Dados e status salvos para ${areasOperacionais[areaId].nome}!`);
+    }
+
+    // --- MODAL INSTITUCIONAL ---
+    function abrirModalInstitucional() {
+        document.getElementById('modal-institucional-base').classList.remove('hidden');
+    }
+
+    function fecharModalInstitucional() {
+        document.getElementById('modal-institucional-base').classList.add('hidden');
+    }
+
+    // --- GRÁFICOS E RELATÓRIO ANALÍTICO ---
+    function analisarConformidadePista() {
+        const total = 9;
+        let conforme = 0;
+        let atencao = 0;
+        let critico = 0;
+        let pendente = 0;
+        let totalObrasAtivas = 0;
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const status = escalaGlobal.status[areaId] || 'pendente';
+            if (status === 'conforme') conforme++;
+            else if (status === 'atencao') atencao++;
+            else if (status === 'critico') critico++;
+            else pendente++;
+
+            if (escalaGlobal.obras && escalaGlobal.obras[areaId] && escalaGlobal.obras[areaId].ativa) {
+                totalObrasAtivas++;
+            }
+        });
+
+        document.getElementById('kpi-total').innerText = `${conforme + atencao + critico} / ${total}`;
+        document.getElementById('kpi-conforme').innerText = conforme;
+        document.getElementById('kpi-atencao').innerText = atencao;
+        document.getElementById('kpi-critico').innerText = critico;
+
+        const kpiObras = document.getElementById('kpi-obras');
+        if (kpiObras) {
+            kpiObras.innerText = `${totalObrasAtivas} ativas`;
+            if (totalObrasAtivas > 0) {
+                kpiObras.className = 'text-xs font-black px-2 py-0.5 rounded bg-red-600/30 border border-red-500 text-red-300 animate-pulse';
+            } else {
+                kpiObras.className = 'text-xs font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500 text-emerald-300';
+            }
+        }
+
+        const ctx = document.getElementById('graficoDoughnutConformidade').getContext('2d');
+
+        if (graficoConformidade) {
+            graficoConformidade.destroy();
+        }
+
+        const auditadas = conforme + atencao + critico;
+        const percentualCalculado = auditadas > 0 ? Math.round((conforme / auditadas) * 100) : 0;
+
+        const pluginPercentualCentro = {
+            id: 'pluginPercentualCentro',
+            beforeDraw: function(chart) {
+                const width = chart.width,
+                      height = chart.height,
+                      ctx = chart.ctx;
+                ctx.restore();
+                ctx.font = "bold 32px sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#ffffff";
+
+                const texto = `${percentualCalculado}%`,
+                      textoX = Math.round((width - ctx.measureText(texto).width) / 2),
+                      textoY = height / 2;
+
+                ctx.fillText(texto, textoX, textoY);
+
+                ctx.font = "800 10px sans-serif";
+                ctx.fillStyle = "#10b981";
+                const subTexto = "CONFORMIDADE",
+                      subTextoX = Math.round((width - ctx.measureText(subTexto).width) / 2),
+                      subTextoY = (height / 2) + 26;
+                ctx.fillText(subTexto, subTextoX, subTextoY);
+                ctx.save();
+            }
+        };
+
+        graficoConformidade = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Conforme', 'Atenção', 'Crítico', 'Pendente'],
+                datasets: [{
+                    data: [conforme, atencao, critico, pendente],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#1e293b'],
+                    borderColor: '#022c22',
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#e2e8f0',
+                            font: { size: 11, weight: 'bold' }
+                        }
+                    }
+                }
+            },
+            plugins: [pluginPercentualCentro]
+        });
+
+        renderizarRankingDeDesvios();
+        renderizarTabelaTratamentoNC();
+        renderizarComentariosAnalitico();
+    }
+
+    function renderizarRankingDeDesvios() {
+        const listaRanking = document.getElementById('lista-ranking-desvios');
+        listaRanking.innerHTML = '';
+
+        const desviosContadores = {};
+        Object.keys(nomesItensChecklist).forEach(key => {
+            desviosContadores[nomesItensChecklist[key]] = 0;
+        });
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const checks = escalaGlobal.checklists[areaId] || {};
+            Object.keys(nomesItensChecklist).forEach(key => {
+                if (checks[key] === 'nc') {
+                    desviosContadores[nomesItensChecklist[key]]++;
+                }
+            });
+        });
+
+        const rankingOrdenado = Object.entries(desviosContadores).sort((a, b) => b[1] - a[1]);
+
+        rankingOrdenado.forEach(([nome, count]) => {
+            let corBarra = 'bg-emerald-500';
+            if (count > 0 && count < 3) corBarra = 'bg-amber-500';
+            if (count >= 3) corBarra = 'bg-red-500';
+
+            const larguraPercentual = Math.min((count / 9) * 100, 100);
+
+            const div = document.createElement('div');
+            div.className = 'space-y-1.5';
+            div.innerHTML = `
+                <div class="flex justify-between text-xs font-semibold">
+                    <span class="text-slate-200">${nome}</span>
+                    <span class="text-white font-bold ${count > 0 ? 'text-red-400' : 'text-slate-400'}">${count} não conformidades</span>
+                </div>
+                <div class="w-full bg-emerald-950 rounded-full h-2 overflow-hidden border border-emerald-900">
+                    <div class="h-full rounded-full ${corBarra}" style="width: ${larguraPercentual}%"></div>
+                </div>
+            `;
+            listaRanking.appendChild(div);
+        });
+    }
+
+    // --- RENDERIZAR TABELA DE TRATAMENTO DE NÃO CONFORMIDADES (PLANO DE AÇÃO) ---
+    function renderizarTabelaTratamentoNC() {
+        const tbody = document.getElementById('tabela-tratamento-nao-conformidades');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let totalNCLancadas = 0;
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const area = areasOperacionais[areaId];
+            const checks = escalaGlobal.checklists[areaId] || {};
+            const comentarios = escalaGlobal.comentarios[areaId] || 'Sem observações textuais registradas.';
+
+            if (!escalaGlobal.tratamentos) escalaGlobal.tratamentos = {};
+            if (!escalaGlobal.tratamentos[areaId]) escalaGlobal.tratamentos[areaId] = {};
+
+            Object.keys(checks).forEach(itemKey => {
+                if (checks[itemKey] === 'nc') {
+                    totalNCLancadas++;
+                    const trat = escalaGlobal.tratamentos[areaId][itemKey] || {
+                        acao: '',
+                        responsavel: escalaGlobal.alocacoes[areaId] ? colaboradores[escalaGlobal.alocacoes[areaId]].nome : 'Marcos',
+                        status: 'Pendente',
+                        data: new Date().toLocaleDateString('pt-BR')
+                    };
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-emerald-850/60 hover:bg-emerald-900/30 transition-colors';
+
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 font-bold text-white flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            ${area.nome}
+                        </td>
+                        <td class="py-3 px-3 font-semibold text-red-300">${nomesItensChecklist[itemKey]}</td>
+                        <td class="py-3 px-3 text-slate-300 text-[11px] italic max-w-xs">${comentarios}</td>
+                        <td class="py-3 px-3">
+                            <input type="text" id="trat-acao-${areaId}-${itemKey}" value="${trat.acao || ''}" placeholder="Descreva a ação tomada para corrigir..." class="w-full bg-emerald-950 border border-emerald-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400">
+                        </td>
+                        <td class="py-3 px-3">
+                            <input type="text" id="trat-resp-${areaId}-${itemKey}" value="${trat.responsavel || ''}" placeholder="Responsável..." class="w-28 bg-emerald-950 border border-emerald-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400">
+                        </td>
+                        <td class="py-3 px-3">
+                            <select id="trat-status-${areaId}-${itemKey}" class="bg-emerald-950 border border-emerald-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400 font-bold">
+                                <option value="Pendente" ${trat.status === 'Pendente' ? 'selected' : ''}>🔴 Pendente</option>
+                                <option value="Em Andamento" ${trat.status === 'Em Andamento' ? 'selected' : ''}>🟡 Em Andamento</option>
+                                <option value="Concluído" ${trat.status === 'Concluído' ? 'selected' : ''}>🟢 Concluído</option>
+                            </select>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" onclick="salvarTratamentoNC('${areaId}', '${itemKey}')" class="bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold text-[10px] px-2.5 py-1.5 rounded transition-colors" title="Salvar Tratativa">
+                                    Salvar
+                                </button>
+                                <button type="button" onclick="removerNCSingela('${areaId}', '${itemKey}')" class="bg-slate-800 hover:bg-red-900 text-slate-300 hover:text-white p-1.5 rounded border border-slate-700 transition-colors" title="Remover Não Conformidade">
+                                    <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        });
+
+        if (totalNCLancadas === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-6 text-center text-emerald-300 font-medium italic">
+                        <div class="flex flex-col items-center justify-center gap-1">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-emerald-400 mb-1"></i>
+                            <span>Nenhuma não conformidade (NC) ativa ou pendente de tratamento nesta semana.</span>
+                            <span class="text-[10px] text-slate-400">Excelente padrão operacional na base BAVGRU!</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        lucide.createIcons();
+    }
+
+    function salvarTratamentoNC(areaId, itemKey) {
+        const acao = document.getElementById(`trat-acao-${areaId}-${itemKey}`).value.trim();
+        const resp = document.getElementById(`trat-resp-${areaId}-${itemKey}`).value.trim();
+        const status = document.getElementById(`trat-status-${areaId}-${itemKey}`).value;
+
+        if (!escalaGlobal.tratamentos) escalaGlobal.tratamentos = {};
+        if (!escalaGlobal.tratamentos[areaId]) escalaGlobal.tratamentos[areaId] = {};
+
+        escalaGlobal.tratamentos[areaId][itemKey] = {
+            acao: acao,
+            responsavel: resp,
+            status: status,
+            data: new Date().toLocaleDateString('pt-BR')
+        };
+
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+        exibirNotificacaoToast(`Tratativa de ${nomesItensChecklist[itemKey]} atualizada com sucesso!`);
+    }
+
+    function removerNCSingela(areaId, itemKey) {
+        if (!confirm(`Deseja desconsiderar e remover a não conformidade de ${nomesItensChecklist[itemKey]} no setor ${areasOperacionais[areaId].nome}?`)) {
+            return;
+        }
+
+        if (escalaGlobal.checklists && escalaGlobal.checklists[areaId]) {
+            escalaGlobal.checklists[areaId][itemKey] = 'none';
+        }
+        if (escalaGlobal.tratamentos && escalaGlobal.tratamentos[areaId]) {
+            delete escalaGlobal.tratamentos[areaId][itemKey];
+        }
+
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+
+        analisarConformidadePista();
+        exibirNotificacaoToast(`Não conformidade removida!`);
+    }
+
+    // --- EXIBIÇÃO DE COMENTÁRIOS E OBRAS NO RELATÓRIO ANALÍTICO ---
+    function renderizarComentariosAnalitico() {
+        const tbody = document.getElementById('tabela-comentarios-analitico');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let houveramRegistros = false;
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const area = areasOperacionais[areaId];
+            const colabId = escalaGlobal.alocacoes[areaId];
+            const colab = colaboradores[colabId] || { nome: 'Não Escalado' };
+            const status = escalaGlobal.status[areaId] || 'pendente';
+            const comentario = escalaGlobal.comentarios[areaId] || '';
+            const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false };
+
+            if (comentario.trim() !== '' || obra.ativa) {
+                houveramRegistros = true;
+                let statusBadge = '';
+                if (status === 'conforme') statusBadge = '<span class="text-emerald-400 font-bold">🟢 CONFORME</span>';
+                else if (status === 'atencao') statusBadge = '<span class="text-amber-400 font-bold">🟡 ATENÇÃO</span>';
+                else if (status === 'critico') statusBadge = '<span class="text-red-400 font-bold">🔴 CRÍTICO</span>';
+                else statusBadge = '<span class="text-blue-400 font-bold">🔵 PENDENTE</span>';
+
+                let obraBadge = '<span class="text-slate-500">Sem Obra</span>';
+                if (obra.ativa) {
+                    obraBadge = `
+                        <div class="bg-amber-950/80 border border-amber-500 text-amber-300 px-2 py-0.5 rounded text-[10px] font-black inline-flex items-center gap-1">
+                            <i data-lucide="hard-hat" class="w-3 h-3 text-amber-400"></i> ${obra.tipo || 'Obra Ativa'} (${obra.empresa || 'Contratada'})
+                        </div>
+                    `;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-emerald-850/45 hover:bg-emerald-950/40 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3 font-bold text-white">${area.nome}</td>
+                    <td class="py-3 font-medium text-slate-300">${colab.nome}</td>
+                    <td class="py-3 text-[10px]">${statusBadge}</td>
+                    <td class="py-3">${obraBadge}</td>
+                    <td class="py-3 text-slate-100 italic bg-emerald-900/20 px-3 rounded-lg border-l-2 border-emerald-600">${comentario || 'Nenhum comentário adicional registrado.'}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        if (!houveramRegistros) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-4 text-center text-slate-500 italic">
+                        Nenhum comentário, desvio ou obra cadastrada para as áreas nesta semana.
+                    </td>
+                </tr>
+            `;
+        }
+        lucide.createIcons();
+    }
+
+    // --- ABA DE ADMINISTRAÇÃO DA ESCALA & OBRAS ---
+    function renderizarListaFeriasAdmin() {
+        const container = document.getElementById('lista-ferias-admin');
+        container.innerHTML = '';
+
+        Object.keys(colaboradores).forEach(colabId => {
+            const colab = colaboradores[colabId];
+            const feriasAtivas = (escalaGlobal.ferias || []).includes(colabId);
+
+            const label = document.createElement('label');
+            label.className = 'flex items-center justify-between p-2 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-850 cursor-pointer transition-colors';
+            label.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="ferias-${colabId}" ${feriasAtivas ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700">
+                    <span class="text-xs font-bold text-white">${colab.nome} (${colab.cargo})</span>
+                </div>
+                <span class="text-[9px] font-black text-amber-500 tracking-wider">FÉRIAS</span>
+            `;
+            container.appendChild(label);
+        });
+    }
+
+    function renderizarTabelaAtribuicoesAdmin() {
+        const tbody = document.getElementById('tabela-atribuicoes-admin');
+        tbody.innerHTML = '';
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const area = areasOperacionais[areaId];
+            const colabAtivoId = escalaGlobal.alocacoes[areaId];
+            const ptCodigo = escalaGlobal.pts[areaId] || '';
+            const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
+
+            let opcoesHtml = '';
+            Object.keys(colaboradores).forEach(colabId => {
+                const colab = colaboradores[colabId];
+                const selecionado = colabId === colabAtivoId ? 'selected' : '';
+                opcoesHtml += `<option value="${colabId}" ${selecionado}>${colab.nome} (${colab.cargo})</option>`;
+            });
+
+            const tr = document.createElement('tr');
+            tr.className = `border-b border-emerald-850/60 hover:bg-emerald-950/40 transition-colors ${obra.ativa ? 'bg-amber-950/20' : ''}`;
+            tr.innerHTML = `
+                <td class="py-2.5 font-bold text-xs text-white">
+                    ${area.nome}
+                    ${obra.ativa ? '<span class="block text-[9px] text-amber-400 font-extrabold">🚧 COM OBRA</span>' : ''}
+                </td>
+                <td class="py-2.5">
+                    <select id="select-alocacao-${areaId}" class="bg-emerald-950 border border-emerald-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 max-w-[180px]">
+                        ${opcoesHtml}
+                    </select>
+                </td>
+                <td class="py-2.5">
+                    <input type="text" id="input-pt-${areaId}" value="${ptCodigo}" class="bg-emerald-950 border border-emerald-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 w-24" placeholder="Ex: PT-4509">
+                </td>
+                <td class="py-2.5 text-center">
+                    <input type="checkbox" id="admin-obra-check-${areaId}" ${obra.ativa ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500 focus:ring-0 accent-amber-500 bg-slate-900 border-slate-700">
+                </td>
+                <td class="py-2.5">
+                    <input type="text" id="admin-obra-tipo-${areaId}" value="${obra.tipo || ''}" class="bg-emerald-950 border border-emerald-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500 w-36" placeholder="Tipo / Escopo">
+                </td>
+                <td class="py-2.5">
+                    <input type="text" id="admin-obra-empresa-${areaId}" value="${obra.empresa || ''}" class="bg-emerald-950 border border-emerald-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500 w-32" placeholder="Empresa Executora">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function salvarConfiguracaoAdmin() {
+        const listaFerias = [];
+        Object.keys(colaboradores).forEach(colabId => {
+            const checkbox = document.getElementById(`ferias-${colabId}`);
+            if (checkbox && checkbox.checked) {
+                listaFerias.push(colabId);
+            }
+        });
+        escalaGlobal.ferias = listaFerias;
+
+        if (!escalaGlobal.obras) escalaGlobal.obras = {};
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const select = document.getElementById(`select-alocacao-${areaId}`);
+            const inputPt = document.getElementById(`input-pt-${areaId}`);
+            const checkObra = document.getElementById(`admin-obra-check-${areaId}`);
+            const inputTipo = document.getElementById(`admin-obra-tipo-${areaId}`);
+            const inputEmpresa = document.getElementById(`admin-obra-empresa-${areaId}`);
+
+            if (select) escalaGlobal.alocacoes[areaId] = select.value;
+            if (inputPt) escalaGlobal.pts[areaId] = inputPt.value;
+
+            const obraAtual = escalaGlobal.obras[areaId] || {};
+            escalaGlobal.obras[areaId] = {
+                ativa: checkObra ? checkObra.checked : !!obraAtual.ativa,
+                tipo: inputTipo ? inputTipo.value.trim() : (obraAtual.tipo || ''),
+                empresa: inputEmpresa ? inputEmpresa.value.trim() : (obraAtual.empresa || ''),
+                responsavel: obraAtual.responsavel || '',
+                telefone: obraAtual.telefone || '',
+                ssma: obraAtual.ssma || ''
+            };
+        });
+
+        Object.keys(areasOperacionais).forEach(areaId => {
+            const responsavelId = escalaGlobal.alocacoes[areaId];
+            if (escalaGlobal.ferias.includes(responsavelId)) {
+                escalaGlobal.alocacoes[areaId] = 'marcos';
+            }
+        });
+
+        const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
+        localStorage.setItem(chave, JSON.stringify(escalaGlobal));
+
+        carregarDadosSemana();
+        exibirNotificacaoToast(`Escala, PTs e Obras da Semana ${semanaAtiva} gravadas com sucesso!`);
+    }
+
+    // --- SELETOR DE ABAS PRINCIPAIS ---
+    function alternarAba(abaDestino) {
+        abaAtiva = abaDestino;
+        const abas = {
+            'mapa': document.getElementById('container-mapa-central'),
+            'analise': document.getElementById('aba-relatorio-analitico'),
+            'admin': document.getElementById('aba-administracao-escala')
+        };
+
+        const botoes = {
+            'mapa': document.getElementById('btn-aba-mapa'),
+            'analise': document.getElementById('btn-aba-analise'),
+            'admin': document.getElementById('btn-aba-admin')
+        };
+
+        Object.keys(abas).forEach(k => {
+            abas[k].classList.add('hidden');
+            botoes[k].className = "aba-btn flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 px-3 py-2.5 rounded-lg text-sm transition-all";
+        });
+
+        abas[abaDestino].classList.remove('hidden');
+        botoes[abaDestino].className = "aba-btn flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2.5 rounded-lg text-sm transition-all shadow-md";
+
+        const blocoResponsaveis = document.getElementById('aba-responsaveis-secao');
+        if (abaDestino === 'mapa') {
+            blocoResponsaveis.classList.remove('hidden');
+        } else {
+            blocoResponsaveis.classList.add('hidden');
+        }
+
+        if (abaDestino === 'analise') {
+            analisarConformidadePista();
+        }
+    }
+
+    // --- ROLOVER AUTOMÁTICO DE DATA (MEIA-NOITE) ---
+    function iniciarRastreadorTempoReal() {
+        setInterval(() => {
+            const dataHojeRef = new Date();
+            const dataReferencia = new Date(2026, 7, 17);
+            const diferencaDias = Math.floor((dataHojeRef.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24));
+
+            let semanaCorretaDispositivo = 34 + Math.floor(diferencaDias / 7);
+            if (semanaCorretaDispositivo < 34) semanaCorretaDispositivo = 34;
+            if (semanaCorretaDispositivo > 53) semanaCorretaDispositivo = 53;
+
+            if (semanaAtiva !== semanaCorretaDispositivo) {
+                semanaAtiva = semanaCorretaDispositivo;
+                carregarDadosSemana();
+                exibirNotificacaoToast(`Virada de dia automática detectada! Carregando dados da Semana ${semanaCorretaDispositivo}.`);
+            }
+        }, 30000);
+    }
+
+    // --- EXPORTAÇÃO DO RELATÓRIO MENSAL EM PDF (html2pdf) ---
+    function exportarRelatorioMensalPDF() {
+        exibirNotificacaoToast("Gerando Relatório Mensal Estruturado em PDF...");
+
+        // Coletar semanas do mês ativo (agrupamento de 4 semanas ao redor da ativa)
+        const semanaBase = semanaAtiva;
+        const inicioCiclo = Math.max(34, semanaBase - 1);
+        const fimCiclo = Math.min(53, inicioCiclo + 3);
+
+        let linhasAreasHtml = '';
+        let linhasTratativasHtml = '';
+        let totalAuditadas = 0;
+        let totalConformes = 0;
+        let totalDesvios = 0;
+
+        // Compilar dados consolidados do ciclo
+        for (let s = inicioCiclo; s <= fimCiclo; s++) {
+            const chave = `BAVGRU_SEMANA_${s}`;
+            let d = null;
+            try { d = JSON.parse(localStorage.getItem(chave)); } catch(e) { d = null; }
+            if (!d) continue;
+
+            Object.keys(areasOperacionais).forEach(areaId => {
+                const area = areasOperacionais[areaId];
+                const colabId = d.alocacoes ? d.alocacoes[areaId] : '';
+                const colab = colaboradores[colabId] || { nome: 'N/A' };
+                const st = (d.status && d.status[areaId]) || 'pendente';
+                const obs = (d.comentarios && d.comentarios[areaId]) || '-';
+
+                if (st !== 'pendente') totalAuditadas++;
+                if (st === 'conforme') totalConformes++;
+                if (st === 'critico' || st === 'atencao') totalDesvios++;
+
+                linhasAreasHtml += `
+                    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+                        <td style="padding: 6px 8px; font-weight: bold;">Semana ${s}</td>
+                        <td style="padding: 6px 8px;">${area.nome}</td>
+                        <td style="padding: 6px 8px;">${colab.nome}</td>
+                        <td style="padding: 6px 8px; font-weight: bold; color: ${st === 'conforme' ? '#047857' : (st === 'atencao' ? '#b45309' : (st === 'critico' ? '#b91c1c' : '#64748b'))}; text-transform: uppercase;">${st}</td>
+                        <td style="padding: 6px 8px; font-style: italic;">${obs}</td>
+                    </tr>
+                `;
+
+                // Compilar Não Conformidades e Tratamentos
+                const checks = (d.checklists && d.checklists[areaId]) || {};
+                const tratamentos = (d.tratamentos && d.tratamentos[areaId]) || {};
+
+                Object.keys(checks).forEach(k => {
+                    if (checks[k] === 'nc') {
+                        const trat = tratamentos[k] || { acao: 'Ação preventiva/corretiva em implantação', responsavel: colab.nome, status: 'Pendente' };
+                        linhasTratativasHtml += `
+                            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+                                <td style="padding: 6px 8px; font-weight: bold;">Semana ${s}</td>
+                                <td style="padding: 6px 8px; font-weight: bold;">${area.nome}</td>
+                                <td style="padding: 6px 8px; color: #b91c1c; font-weight: bold;">${nomesItensChecklist[k] || k}</td>
+                                <td style="padding: 6px 8px;">${trat.acao || 'Tratativa técnica em andamento'}</td>
+                                <td style="padding: 6px 8px;">${trat.responsavel || colab.nome}</td>
+                                <td style="padding: 6px 8px; font-weight: bold; color: ${trat.status === 'Concluído' ? '#047857' : '#b45309'};">${trat.status || 'Pendente'}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+        }
+
+        const taxaConformidade = totalAuditadas > 0 ? Math.round((totalConformes / totalAuditadas) * 100) : 0;
+
+        const containerPdf = document.getElementById('template-relatorio-pdf-mensal');
+        containerPdf.classList.remove('hidden');
+
+        containerPdf.innerHTML = `
+            <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px;">
+                <!-- Cabeçalho Oficial -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #005c2d; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 20px; font-weight: 900; color: #005c2d; margin: 0;">VIBRA ENERGIA — BAVGRU</h1>
+                        <p style="font-size: 13px; font-weight: bold; color: #334155; margin: 4px 0 0 0;">RELATÓRIO MENSAL CONSOLIDADO DE AUDITORIA & SSMA</p>
+                        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Ciclo de Semanas: Semana ${inicioCiclo} a Semana ${fimCiclo} | Base de Aviação de Guarulhos</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 10px; font-weight: bold; background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 4px 8px; border-radius: 4px; display: inline-block;">PROGRAMA: CEO DA UNIDADE</span>
+                        <p style="font-size: 10px; color: #64748b; margin: 6px 0 0 0;">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+                    </div>
+                </div>
+
+                <!-- KPIs Executivos -->
+                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                    <div style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; color: #64748b; display: block; font-weight: bold;">TOTAL DE INSPEÇÕES</span>
+                        <span style="font-size: 22px; font-weight: 900; color: #0f172a;">${totalAuditadas}</span>
+                    </div>
+                    <div style="flex: 1; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; color: #166534; display: block; font-weight: bold;">ÍNDICE DE CONFORMIDADE</span>
+                        <span style="font-size: 22px; font-weight: 900; color: #15803d;">${taxaConformidade}%</span>
+                    </div>
+                    <div style="flex: 1; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; color: #991b1b; display: block; font-weight: bold;">NÃO CONFORMIDADES (NC)</span>
+                        <span style="font-size: 22px; font-weight: 900; color: #b91c1c;">${totalDesvios}</span>
+                    </div>
+                </div>
+
+                <!-- Seção 1: Tratamento das Não Conformidades (Plano de Ação) -->
+                <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 13px; font-weight: 900; color: #005c2d; text-transform: uppercase; border-left: 4px solid #008f45; padding-left: 8px; margin-bottom: 10px;">
+                        1. Plano de Ação & Tratamento de Não Conformidades
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: #f1f5f9; font-size: 10px; color: #475569; text-transform: uppercase; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px;">Semana</th>
+                                <th style="padding: 8px;">Setor</th>
+                                <th style="padding: 8px;">Item com Desvio</th>
+                                <th style="padding: 8px;">Ação Corretiva / Tratamento Adotado</th>
+                                <th style="padding: 8px;">Responsável</th>
+                                <th style="padding: 8px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${linhasTratativasHtml || '<tr><td colspan="6" style="padding: 12px; text-align: center; font-style: italic; color: #64748b;">Nenhuma não conformidade registrada no ciclo mensal. Padrão 100% conforme!</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Seção 2: Histórico Geral de Vistorias -->
+                <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 13px; font-weight: 900; color: #005c2d; text-transform: uppercase; border-left: 4px solid #008f45; padding-left: 8px; margin-bottom: 10px;">
+                        2. Histórico Consolidado de Setores Operacionais
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: #f1f5f9; font-size: 10px; color: #475569; text-transform: uppercase; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px;">Semana</th>
+                                <th style="padding: 8px;">Setor de Pista</th>
+                                <th style="padding: 8px;">Responsável</th>
+                                <th style="padding: 8px;">Status da Auditoria</th>
+                                <th style="padding: 8px;">Observações e Evidências</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${linhasAreasHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Assinaturas de Liderança BAVGRU -->
+                <div style="margin-top: 40px; display: flex; justify-content: space-around; text-align: center;">
+                    <div style="border-top: 1px solid #94a3b8; width: 220px; padding-top: 6px; font-size: 11px;">
+                        <strong>Marcos Vinicius</strong><br>
+                        <span style="color: #64748b;">Supervisor Geral BAVGRU</span>
+                    </div>
+                    <div style="border-top: 1px solid #94a3b8; width: 220px; padding-top: 6px; font-size: 11px;">
+                        <strong>Ruan Carlos</strong><br>
+                        <span style="color: #64748b;">Gerente de Operações BAVGRU</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = {
+            margin: [8, 8, 8, 8],
+            filename: `BAVGRU_RELATORIO_MENSAL_CEO_SSMA_SEMANAS_${inicioCiclo}_A_${fimCiclo}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(containerPdf).save().then(() => {
+            containerPdf.classList.add('hidden');
+            exibirNotificacaoToast("Relatório Mensal em PDF exportado com sucesso!");
+        });
+    }
+
+    // --- EXPORTAÇÃO PARA EXCEL (CSV) ---
+    function exportarRelatorioGeral() {
+        let conteudoCsv = "data:text/csv;charset=utf-8,";
+        conteudoCsv += "Semana,Periodo,Setor,Responsavel,Turno,Status,PT,Obra_Ativa,Obra_Tipo,Obra_Empresa,Obra_Resp,Obra_Tel,Obra_SSMA,Obs_Supervisor,Qtd_Nao_Conformidades\n";
+
+        for (let s = 34; s <= 53; s++) {
+            const chave = `BAVGRU_SEMANA_${s}`;
+            let dadosSemana = null;
+            try {
+                dadosSemana = JSON.parse(localStorage.getItem(chave));
+            } catch(e) { dadosSemana = null; }
+            if (!dadosSemana) continue;
+
+            const periodo = obterPeriodoSemana(s).replace(',', ' -');
+
+            Object.keys(areasOperacionais).forEach(areaId => {
+                const area = areasOperacionais[areaId];
+                const colabId = dadosSemana.alocacoes ? dadosSemana.alocacoes[areaId] : '';
+                const colab = colaboradores[colabId] || { nome: 'Nao Escalado', cargo: 'Operador', turno: 'N/A' };
+                const status = dadosSemana.status ? dadosSemana.status[areaId] || 'pendente' : 'pendente';
+                const pt = dadosSemana.pts ? dadosSemana.pts[areaId] || 'Sem PT' : 'Sem PT';
+                const obs = ((dadosSemana.comentarios && dadosSemana.comentarios[areaId]) || '').replace(/\n/g, ' ').replace(/,/g, ';');
+
+                const obra = (dadosSemana.obras && dadosSemana.obras[areaId]) ? dadosSemana.obras[areaId] : { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
+                const obraAtivaTxt = obra.ativa ? 'SIM' : 'NAO';
+                const obraTipoTxt = (obra.tipo || '').replace(/,/g, ';');
+                const obraEmpresaTxt = (obra.empresa || '').replace(/,/g, ';');
+                const obraRespTxt = (obra.responsavel || '').replace(/,/g, ';');
+                const obraTelTxt = (obra.telefone || '').replace(/,/g, ';');
+                const obraSsmaTxt = (obra.ssma || '').replace(/,/g, ';');
+
+                let totalDesvios = 0;
+                const checks = (dadosSemana.checklists && dadosSemana.checklists[areaId]) || {};
+                Object.keys(checks).forEach(k => {
+                    if (checks[k] === 'nc') totalDesvios++;
+                });
+
+                conteudoCsv += `Semana ${s},${periodo},${area.nome},${colab.nome},${colab.turno},${status.toUpperCase()},${pt},${obraAtivaTxt},${obraTipoTxt},${obraEmpresaTxt},${obraRespTxt},${obraTelTxt},${obraSsmaTxt},${obs},${totalDesvios}\n`;
+            });
+        }
+
+        const encodedUri = encodeURI(conteudoCsv);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `BAVGRU_RELATORIO_CONSOLIDADO_CEO_OBRAS_2026.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
