@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bavgru-ceo-v1';
+const CACHE_NAME = 'bavgru-ceo-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,11 +7,11 @@ const ASSETS_TO_CACHE = [
   './Mapa-estacionamento-full-v3.jpg',
   './Ger Ruan.png',
   './Sup Marcos.png',
-  './Foto dionislio, atualizada.png',
-  './LT André.png',
+  './Foto dionisio, atualizada.png',
+  './Tenente André.png',
   './LT Brasil.png',
-  './Guard Idenilson.png',
-  './Guard Marcio.png',
+  './Guarda Idenilson.png',
+  './Guarda Marcio.png',
   './Guar Gustavo.png',
   './Seg Graciete.png'
 ];
@@ -20,7 +20,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
-        console.warn('Falha parcial no cache inicial:', err);
+        console.warn('Cache parcial:', err);
       });
     })
   );
