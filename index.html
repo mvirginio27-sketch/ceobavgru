@@ -701,6 +701,7 @@
                             <th class="py-2.5">Responsável</th>
                             <th class="py-2.5">Status</th>
                             <th class="py-2.5">Obra Crítica</th>
+                            <th class="py-2.5">Evidência Fotográfica</th>
                             <th class="py-2.5">Comentário / Desvio Registrado pelo Supervisor</th>
                         </tr>
                     </thead>
@@ -867,6 +868,58 @@
                 </div>
             </div>
 
+            <!-- BLOCO DE EVIDÊNCIA FOTOGRÁFICA DA AUDITORIA -->
+            <div class="bg-gradient-to-r from-emerald-950/90 to-emerald-900/60 p-3.5 rounded-xl border border-emerald-700/80 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <i data-lucide="camera" class="w-4 h-4 text-amber-400"></i>
+                        Registro Fotográfico / Evidência da Auditoria
+                    </label>
+                    <span id="badge-foto-status" class="text-[10px] text-slate-400 font-semibold bg-black/40 px-2 py-0.5 rounded border border-emerald-800">
+                        Nenhuma foto anexada
+                    </span>
+                </div>
+
+                <!-- Botões para Tirar Foto (Câmera) ou Escolher da Galeria -->
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button type="button" onclick="acionarCameraModal()" class="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-all shadow-md active:scale-95">
+                        <i data-lucide="camera" class="w-4 h-4"></i>
+                        Tirar Foto com a Câmera
+                    </button>
+                    <button type="button" onclick="acionarGaleriaModal()" class="bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-all">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        Escolher da Galeria
+                    </button>
+                    <!-- Inputs de Arquivo Ocultos -->
+                    <input type="file" id="input-foto-camera" accept="image/*" capture="environment" class="hidden" onchange="processarFotoInput(this)">
+                    <input type="file" id="input-foto-galeria" accept="image/*" class="hidden" onchange="processarFotoInput(this)">
+                </div>
+
+                <!-- Preview da Foto Anexada -->
+                <div id="container-preview-foto" class="hidden relative mt-2 bg-black/70 rounded-lg p-2.5 border border-emerald-600 flex items-center gap-3">
+                    <div class="relative w-16 h-16 rounded overflow-hidden border-2 border-emerald-400 flex-shrink-0 cursor-pointer shadow-lg group" onclick="visualizarFotoGrande()" title="Clique para ampliar">
+                        <img id="img-preview-auditoria" src="" alt="Evidência" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="maximize-2" class="w-4 h-4 text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="block text-xs font-extrabold text-emerald-300 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Foto Registrada
+                        </span>
+                        <span id="txt-foto-data" class="block text-[10px] text-slate-300">Toque na imagem para ampliar em tela cheia</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="visualizarFotoGrande()" class="p-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white transition-colors" title="Ampliar Foto">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" onclick="removerFotoModal()" class="p-2 rounded-lg bg-red-950 border border-red-700 hover:bg-red-900 text-red-300 transition-colors" title="Excluir Foto">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Campo de Observações do Supervisor -->
             <div>
                 <label for="modal-observacoes" class="block text-xs font-bold text-emerald-400 uppercase mb-1.5">Comentários e Desvios Observados</label>
@@ -969,6 +1022,29 @@
     </div>
 </div>
 
+<!-- MODAL: VISUALIZAR FOTO AMPLIADA (LIGHTBOX) -->
+<div id="modal-lightbox-foto" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur p-4" onclick="fecharLightboxFoto()">
+    <div class="relative max-w-3xl max-h-[90vh] bg-emerald-950 border-2 border-emerald-600 rounded-2xl overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+        <div class="p-3.5 bg-emerald-900 border-b border-emerald-700 flex justify-between items-center">
+            <h4 id="lightbox-titulo" class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i>
+                Evidência Fotográfica da Auditoria
+            </h4>
+            <button onclick="fecharLightboxFoto()" class="text-slate-400 hover:text-white transition-colors p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="p-3 flex items-center justify-center bg-black/80 max-h-[75vh] overflow-hidden">
+            <img id="lightbox-img" src="" alt="Evidência Fotográfica Ampliada" class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-xl">
+        </div>
+        <div class="p-3 bg-emerald-950 border-t border-emerald-800 flex justify-end">
+            <button onclick="fecharLightboxFoto()" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow">
+                Fechar Visualização
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- CONTAINER DE NOTIFICAÇÃO TOAST -->
 <div id="toast-notificacao" class="hidden fixed bottom-6 right-6 z-[200] bg-emerald-500 border border-emerald-400 text-emerald-950 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 transition-all transform translate-y-10 opacity-0">
     <i data-lucide="check-circle-2" class="w-5 h-5"></i>
@@ -1049,6 +1125,7 @@
     let graficoConformidade = null;
     let setorSelecionadoModal = '';
     let checklistTempModal = {}; // Armazena escolhas temporárias no modal
+    let fotoTempModal = ''; // Armazena foto temporária Base64 no modal
 
     // --- COORDENADAS DO PERÍODO POR SEMANA ---
     function obterPeriodoSemana(semana) {
@@ -1093,9 +1170,11 @@
 
             const defaultObras = {};
             const defaultTratamentos = {};
+            const defaultFotos = {};
             Object.keys(areasOperacionais).forEach(id => {
                 defaultObras[id] = { ativa: false, tipo: '', empresa: '', responsavel: '', telefone: '', ssma: '' };
                 defaultTratamentos[id] = {};
+                defaultFotos[id] = '';
             });
 
             if (!dadosSalvos) {
@@ -1117,12 +1196,14 @@
                         'instalacoes': '', 'pool': '', 'vip': '', 'manutencao': '', 'operacoes': '', 'enchimento': '', 'base': '', 'abastecimento': '', 'abastecimento-t3': ''
                     },
                     obras: defaultObras,
-                    tratamentos: defaultTratamentos
+                    tratamentos: defaultTratamentos,
+                    fotos: defaultFotos
                 };
                 localStorage.setItem(chave, JSON.stringify(defaultData));
             } else {
                 if (!dadosSalvos.obras) dadosSalvos.obras = defaultObras;
                 if (!dadosSalvos.tratamentos) dadosSalvos.tratamentos = defaultTratamentos;
+                if (!dadosSalvos.fotos) dadosSalvos.fotos = defaultFotos;
                 localStorage.setItem(chave, JSON.stringify(dadosSalvos));
             }
         }
@@ -1142,6 +1223,12 @@
             escalaGlobal.tratamentos = {};
             Object.keys(areasOperacionais).forEach(id => {
                 escalaGlobal.tratamentos[id] = {};
+            });
+        }
+        if (!escalaGlobal.fotos) {
+            escalaGlobal.fotos = {};
+            Object.keys(areasOperacionais).forEach(id => {
+                escalaGlobal.fotos[id] = '';
             });
         }
 
@@ -1487,6 +1574,10 @@
 
         selecionarStatusBotaoVisual(status);
 
+        // Carregar Foto da Auditoria
+        fotoTempModal = (escalaGlobal.fotos && escalaGlobal.fotos[areaId]) ? escalaGlobal.fotos[areaId] : '';
+        atualizarPreviewFotoModal(fotoTempModal);
+
         // Copiar checklist atual para o objeto temporário
         checklistTempModal = Object.assign({}, escalaGlobal.checklists[areaId] || {});
 
@@ -1554,6 +1645,11 @@
         if (escalaGlobal.tratamentos && escalaGlobal.tratamentos[areaId]) {
             escalaGlobal.tratamentos[areaId] = {};
         }
+        if (escalaGlobal.fotos) {
+            delete escalaGlobal.fotos[areaId];
+        }
+        fotoTempModal = '';
+        atualizarPreviewFotoModal('');
 
         const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
         localStorage.setItem(chave, JSON.stringify(escalaGlobal));
@@ -1648,6 +1744,10 @@
             }
         });
 
+        // Salvar Foto da Auditoria
+        if (!escalaGlobal.fotos) escalaGlobal.fotos = {};
+        escalaGlobal.fotos[areaId] = fotoTempModal;
+
         const chave = `BAVGRU_SEMANA_${semanaAtiva}`;
         localStorage.setItem(chave, JSON.stringify(escalaGlobal));
 
@@ -1657,7 +1757,117 @@
         analisarConformidadePista();
         atualizarSinalizacaoObrasRodape();
         renderizarTabelaAtribuicoesAdmin();
-        exibirNotificacaoToast(`Dados e status salvos para ${areasOperacionais[areaId].nome}!`);
+        exibirNotificacaoToast(`Dados, foto e status salvos para ${areasOperacionais[areaId].nome}!`);
+    }
+
+    // --- GESTÃO DE FOTOS & EVIDÊNCIAS DE AUDITORIA ---
+    function acionarCameraModal() {
+        const input = document.getElementById('input-foto-camera');
+        if (input) {
+            input.value = '';
+            input.click();
+        }
+    }
+
+    function acionarGaleriaModal() {
+        const input = document.getElementById('input-foto-galeria');
+        if (input) {
+            input.value = '';
+            input.click();
+        }
+    }
+
+    function processarFotoInput(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+
+        exibirNotificacaoToast("Processando e otimizando foto da evidência...");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Redimensionar para no máximo 900px mantendo proporção para não sobrecarregar memória
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 900;
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Converter para JPEG compactado (~40KB-70KB)
+                const fotoComprimida = canvas.toDataURL('image/jpeg', 0.65);
+                fotoTempModal = fotoComprimida;
+                atualizarPreviewFotoModal(fotoComprimida);
+                exibirNotificacaoToast("Foto anexada à auditoria com sucesso!");
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function atualizarPreviewFotoModal(fotoBase64) {
+        const container = document.getElementById('container-preview-foto');
+        const img = document.getElementById('img-preview-auditoria');
+        const badge = document.getElementById('badge-foto-status');
+
+        if (fotoBase64 && fotoBase64.trim() !== '') {
+            img.src = fotoBase64;
+            container.classList.remove('hidden');
+            badge.innerText = '🟢 Foto anexada';
+            badge.className = 'text-[10px] text-emerald-300 font-extrabold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500';
+        } else {
+            img.src = '';
+            container.classList.add('hidden');
+            badge.innerText = 'Nenhuma foto anexada';
+            badge.className = 'text-[10px] text-slate-400 font-semibold bg-black/40 px-2 py-0.5 rounded border border-emerald-800';
+        }
+        lucide.createIcons();
+    }
+
+    function removerFotoModal() {
+        if (!confirm("Deseja remover a foto anexada a esta auditoria?")) return;
+        fotoTempModal = '';
+        atualizarPreviewFotoModal('');
+        exibirNotificacaoToast("Foto removida!");
+    }
+
+    function visualizarFotoGrande() {
+        if (!fotoTempModal) return;
+        const area = areasOperacionais[setorSelecionadoModal] || { nome: 'Setor' };
+        document.getElementById('lightbox-titulo').innerHTML = `<i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i> Evidência Fotográfica: ${area.nome}`;
+        document.getElementById('lightbox-img').src = fotoTempModal;
+        document.getElementById('modal-lightbox-foto').classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    function abrirLightboxVisualizacao(areaId) {
+        const foto = (escalaGlobal.fotos && escalaGlobal.fotos[areaId]) ? escalaGlobal.fotos[areaId] : '';
+        if (!foto) return;
+        const area = areasOperacionais[areaId] || { nome: 'Setor' };
+        document.getElementById('lightbox-titulo').innerHTML = `<i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i> Evidência Fotográfica: ${area.nome} (Semana ${semanaAtiva})`;
+        document.getElementById('lightbox-img').src = foto;
+        document.getElementById('modal-lightbox-foto').classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    function fecharLightboxFoto() {
+        document.getElementById('modal-lightbox-foto').classList.add('hidden');
     }
 
     // --- MODAL INSTITUCIONAL ---
@@ -1953,8 +2163,9 @@
             const status = escalaGlobal.status[areaId] || 'pendente';
             const comentario = escalaGlobal.comentarios[areaId] || '';
             const obra = (escalaGlobal.obras && escalaGlobal.obras[areaId]) ? escalaGlobal.obras[areaId] : { ativa: false };
+            const foto = (escalaGlobal.fotos && escalaGlobal.fotos[areaId]) ? escalaGlobal.fotos[areaId] : '';
 
-            if (comentario.trim() !== '' || obra.ativa) {
+            if (comentario.trim() !== '' || obra.ativa || foto) {
                 houveramRegistros = true;
                 let statusBadge = '';
                 if (status === 'conforme') statusBadge = '<span class="text-emerald-400 font-bold">🟢 CONFORME</span>';
@@ -1971,6 +2182,18 @@
                     `;
                 }
 
+                let fotoHtml = '<span class="text-slate-500 text-[10px]">Sem foto</span>';
+                if (foto) {
+                    fotoHtml = `
+                        <div class="relative w-12 h-12 rounded-lg border-2 border-emerald-500 overflow-hidden cursor-pointer shadow hover:scale-105 transition-transform" onclick="abrirLightboxVisualizacao('${areaId}')" title="Clique para ver foto ampliada">
+                            <img src="${foto}" alt="Evidência" class="w-full h-full object-cover">
+                            <span class="absolute bottom-0 right-0 bg-black/80 px-1 py-0.2 rounded text-[8px] text-emerald-300 font-bold flex items-center gap-0.5">
+                                <i data-lucide="zoom-in" class="w-2.5 h-2.5"></i> Ver
+                            </span>
+                        </div>
+                    `;
+                }
+
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-emerald-850/45 hover:bg-emerald-950/40 transition-colors';
                 tr.innerHTML = `
@@ -1978,6 +2201,7 @@
                     <td class="py-3 font-medium text-slate-300">${colab.nome}</td>
                     <td class="py-3 text-[10px]">${statusBadge}</td>
                     <td class="py-3">${obraBadge}</td>
+                    <td class="py-3">${fotoHtml}</td>
                     <td class="py-3 text-slate-100 italic bg-emerald-900/20 px-3 rounded-lg border-l-2 border-emerald-600">${comentario || 'Nenhum comentário adicional registrado.'}</td>
                 `;
                 tbody.appendChild(tr);
@@ -1987,8 +2211,8 @@
         if (!houveramRegistros) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="py-4 text-center text-slate-500 italic">
-                        Nenhum comentário, desvio ou obra cadastrada para as áreas nesta semana.
+                    <td colspan="6" class="py-4 text-center text-slate-500 italic">
+                        Nenhum comentário, desvio ou evidência fotográfica cadastrada para as áreas nesta semana.
                     </td>
                 </tr>
             `;
@@ -2193,6 +2417,8 @@
                 const colab = colaboradores[colabId] || { nome: 'N/A' };
                 const st = (d.status && d.status[areaId]) || 'pendente';
                 const obs = (d.comentarios && d.comentarios[areaId]) || '-';
+                const fotoPdf = (d.fotos && d.fotos[areaId]) ? d.fotos[areaId] : '';
+                const fotoPdfHtml = fotoPdf ? `<div style="margin-top: 4px;"><img src="${fotoPdf}" style="max-width: 70px; max-height: 50px; border-radius: 4px; border: 1px solid #cbd5e1; display: block;"></div>` : '';
 
                 if (st !== 'pendente') totalAuditadas++;
                 if (st === 'conforme') totalConformes++;
@@ -2204,7 +2430,7 @@
                         <td style="padding: 6px 8px;">${area.nome}</td>
                         <td style="padding: 6px 8px;">${colab.nome}</td>
                         <td style="padding: 6px 8px; font-weight: bold; color: ${st === 'conforme' ? '#047857' : (st === 'atencao' ? '#b45309' : (st === 'critico' ? '#b91c1c' : '#64748b'))}; text-transform: uppercase;">${st}</td>
-                        <td style="padding: 6px 8px; font-style: italic;">${obs}</td>
+                        <td style="padding: 6px 8px; font-style: italic;">${obs} ${fotoPdfHtml}</td>
                     </tr>
                 `;
 
